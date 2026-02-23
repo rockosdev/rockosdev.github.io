@@ -15,7 +15,7 @@ $ bundle exec jekyll serve
 This work is published under [MIT][mit] License.
 
 ## Acknowledgement
-* Blog Tutorial[zzy979](https://github.com/ZZy979/zzy979.github.io?tab=readme-ov-file)
+* Blog Tutorial:[zzy979](https://github.com/ZZy979/zzy979.github.io?tab=readme-ov-file)
 * Blog framework:[Jwkyll](https://jekyllrb.com/)
 * Theme:[Chirpy](https://github.com/cotes2020/jekyll-theme-chirpy/)
 * Comment system:[giscus](https://giscus.app/)
