@@ -12,7 +12,7 @@ $ bundle exec jekyll serve
 ```
 
 ## License
-This work is published under [MIT][mit] License.
+This work is published under [MIT](https://github.com/rockosdev/rockosdev.github.io/blob/main/LICENSE) License.
 
 ## Acknowledgement
 * Blog Tutorial:[zzy979](https://github.com/ZZy979/zzy979.github.io?tab=readme-ov-file)
