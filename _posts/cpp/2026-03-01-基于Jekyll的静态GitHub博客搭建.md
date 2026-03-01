@@ -3,7 +3,6 @@
 title:              "基于Jekyll的静态GitHub博客搭建" 
 date:               2026-02-24 11:20:00              
 last_modified_at:   2026-02-25 15:30:00           
-author:             "rock"                         
 toc:                true                           
 categories:         [Blog, Jekyll]                  
 tags:               [blog]                           
