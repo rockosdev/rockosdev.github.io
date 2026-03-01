@@ -1,3 +1,22 @@
+---
+
+title:              "基于Jekyll的静态GitHub博客搭建" 
+date:               2026-02-24 11:20:00              
+last_modified_at:   2026-02-25 15:30:00           
+author:             "rock"                         
+toc:                true                           
+categories:         [Blog, Jekyll]                  
+tags:               [blog]                           
+
+---
+
+<font size=4 color=blue>
+“Jekyll is everything that I ever wanted in a blogging engine. Really. It isn’t perfect, but what’s excellent about it is that if there’s something wrong, I know exactly how it works and how to fix it. It runs on the your machine only, and is essentially an added “build” step between you and the browser. I coded this entire site in TextMate using standard HTML5 and CSS3, and then at the end I added just a few little variables to the markup. Presto-chango, my site is built and I am at peace with the world.”
+——by Carter Allen
+</font>
+
+---
+
 我是Fedora KDE43操作系统:
 
 ```bash
