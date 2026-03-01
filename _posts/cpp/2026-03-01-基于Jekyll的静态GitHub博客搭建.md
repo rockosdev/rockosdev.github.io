@@ -307,7 +307,6 @@ assets/
 title:              "基于Jekyll的静态GitHub博客搭建"    # 文章标题（必需）
 date:               2026-02-24 11:20:00              # 发布时间（必需）
 last_modified_at:   2026-02-25 15:30:00              # 更新时间
-author:             "rock"                           # 作者名称
 toc:                true                             # 显示文章目录
 categories:         [Blog, Jekyll]                   # 文章分类（一级目录， 二级目录， 最多支持二级目录，首字母大写）
 tags:               [blog]                           # 文章标签（可多个, 全部小写）
