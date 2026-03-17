@@ -3,7 +3,7 @@ title:              "0-1 本教程介绍"
 date:               2026-03-18 03:18:00
 last_modified_at:   2026-03-18 03:30:00
 toc:                true
-categories:         [C++, Introduction / Getting Started]
+categories:         [C++, Introduction/Getting Started]
 tags:               [introduction getting-started]
 ---
 
