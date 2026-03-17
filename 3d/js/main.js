@@ -680,7 +680,7 @@ function createScreen() {
     const screenObject = new CSS3DObject(iframe);
     screenObject.position.set(0.00, 52.00, -8.00);
     screenObject.rotation.x = SCREEN_ROT_X;
-    screenObject.scale.set(0.125, 0.11, 0.20);
+    screenObject.scale.set(0.125, 0.112, 0.20);
     screenObject.element.style.backfaceVisibility = 'hidden';
     
     cssScene.add(screenObject);
@@ -768,7 +768,7 @@ console.log('3D 电脑初始化完成');
 console.log('按 R 键触发映射');
 
 // ============================================
-// 追加功能：按 U 键恢复“刚进入电脑时”的视角位置 + 显示提示文字
+// 追加功能：按 U 键恢复“刚进入电脑时”的视角位置
 // 约束：只增加代码，不修改原有逻辑/效果。
 // 还原内容：camera.position、controls.target、camera.zoom。
 // ============================================
@@ -779,11 +779,6 @@ const __initialViewState = {
     controlsTarget: new THREE.Vector3(),
     cameraZoom: 1
 };
-
-// U键文字精灵："车到山前必有路"
-let __uTextSprite = null;
-let __uTextOpacity = 0;
-let __uTextTargetOpacity = 0;
 
 function __saveInitialViewStateOnce() {
     if (__initialViewState.saved) return;
@@ -806,72 +801,6 @@ function __restoreInitialViewState() {
     controls.update();
 }
 
-function __createUTextSpriteOnce() {
-    if (__uTextSprite) return;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // 透明背景
-    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 字体与发光效果：尽量复用 createRainText 的风格
-    ctx.font = 'bold 72px "Microsoft YaHei", "SimHei", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#00ffff';
-    ctx.shadowBlur = 28;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('车到山前必有路', canvas.width / 2, canvas.height / 2);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-
-    const spriteMaterial = new THREE.SpriteMaterial({
-        map: texture,
-        transparent: true,
-        opacity: 0
-    });
-
-    __uTextSprite = new THREE.Sprite(spriteMaterial);
-    __uTextSprite.scale.set(520, 130, 1);
-
-    // 默认放在信息板上方附近（如果信息板位置已存在），否则放在世界中心上方
-    if (typeof laptopFrontUpperPosition !== 'undefined' && laptopFrontUpperPosition) {
-        __uTextSprite.position.copy(laptopFrontUpperPosition);
-        __uTextSprite.position.y += 260;
-    } else {
-        __uTextSprite.position.set(0, 300, 0);
-    }
-
-    scene.add(__uTextSprite);
-}
-
-function __showUTextOnce() {
-    __createUTextSpriteOnce();
-    if (!__uTextSprite) return;
-
-    // 触发淡入，然后自动淡出
-    __uTextTargetOpacity = 1;
-    clearTimeout(__showUTextOnce.__hideTimer);
-    __showUTextOnce.__hideTimer = setTimeout(() => {
-        __uTextTargetOpacity = 0;
-    }, 1200);
-}
-
-function __updateUTextAnimation() {
-    if (!__uTextSprite) return;
-    const dt = 0.016;
-    const speed = 3.0;
-    __uTextOpacity += (__uTextTargetOpacity - __uTextOpacity) * speed * dt;
-    __uTextOpacity = Math.max(0, Math.min(1, __uTextOpacity));
-    __uTextSprite.material.opacity = __uTextOpacity;
-}
-
 // 模型加载并 autoFitCamera 生效后，再记录“刚进入电脑时”的视角
 (function __captureInitialViewWhenReady() {
     const loadingEl = document.getElementById('loading');
@@ -889,12 +818,5 @@ function __updateUTextAnimation() {
 window.addEventListener('keydown', (e) => {
     if (e.key === 'u' || e.key === 'U') {
         __restoreInitialViewState();
-        __showUTextOnce();
     }
 });
-
-// 将 U 字动画挂到每帧更新中（不改动原 animate，只用额外 RAF）
-(function __uTextRafLoop() {
-    requestAnimationFrame(__uTextRafLoop);
-    __updateUTextAnimation();
-})();
