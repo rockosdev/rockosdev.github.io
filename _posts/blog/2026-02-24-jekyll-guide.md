@@ -301,7 +301,6 @@ assets/
 ```yaml
 
 ---
-
 title:              "基于Jekyll的静态GitHub博客搭建"    # 文章标题（必需）
 date:               2026-02-24 11:20:00              # 发布时间（必需）
 last_modified_at:   2026-02-25 15:30:00              # 更新时间
