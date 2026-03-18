@@ -177,12 +177,12 @@ loader.load(
         
         const loading = document.getElementById('loading');
         if (loading) {
-            loading.innerHTML = `加载模型中...<br>${percent}%<br>(${mb}MB / ${totalMb}MB)<br>按 R 键触发映射`;
+            loading.innerHTML = `加载模型中...<br>${percent}%<br>(${mb}MB / ${totalMb}MB)<br>这网页能处，有事它真加载`;
         }
     },
     function (error) {
         console.error('模型加载失败:', error);
-        alert('模型加载失败，请检查路径是否正确');
+        alert('我嘞个豆儿，妈妈又把网给恰了:(');
     }
 );
  
