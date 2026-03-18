@@ -1,5 +1,5 @@
 ---
-title:              "0-1 本教程介绍"
+title:              "《Learn C++》笔记 0.1 本教程介绍"
 date:               2026-03-17 03:18:00
 last_modified_at:   2026-03-17 03:30:00
 toc:                true
