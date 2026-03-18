@@ -764,8 +764,8 @@ window.addEventListener('resize', () => {
     cssRenderer.setSize(newWidth, newHeight);
 });
  
-console.log('3D 电脑初始化完成');
-console.log('按 R 键触发映射');
+console.log('3d-computer initialized');
+console.log('山重水复疑无路，柳暗花明加载中');
 
 // ============================================
 // 追加功能：按 U 键恢复“刚进入电脑时”的视角位置
