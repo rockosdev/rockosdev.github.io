@@ -114,9 +114,9 @@ bundle exec jekyll serve
 > 然后使用`bundle exec jekyll serve`命令启动本地 Jekyll 服务器, 按住Ctrl使用鼠标点击链接（例如http://127.0.0.1:xxx)访问, 使用Ctrl+c关闭服务
 >
 > 设置一些基本配置, 如下:
-> **`__config.yml` 变量详解**
+> **`_config.yml` 变量详解**
 > | 变量 | 含义 | 示例值 |
-> |:--- |:---  |:---   |
+> |--- |---  |---   |
 > | `url` | 网站的完整域名地址（用于生成绝对链接、RSS、SEO） | `https://rockosdev.github.io` |
 > | `avatar` | 个人头像图片的路径或 URL | ` /assets/img/common/avatar.png` |
 > | `timezone` | 网站使用的时区，影响文章发布时间显示 | `Asia/Shanghai` |
