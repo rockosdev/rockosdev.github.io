@@ -118,7 +118,7 @@ bundle exec jekyll serve
 > | 变量 | 含义 | 示例值 |
 > | --- | :---  | ---   |
 > | `url` | 网站的完整域名地址（用于生成绝对链接、RSS、SEO） | `https://rockosdev.github.io` |
-> | `avatar` | 个人头像图片的路径或 URL | ` /assets/img/common/avatar.png` |
+> | `avatar` | 个人头像图片的路径或 URL | `/assets/img/common/avatar.png` |
 > | `timezone` | 网站使用的时区，影响文章发布时间显示 | `Asia/Shanghai` |
 > | `lang` | 网站的主要语言代码，用于 HTML 语言属性 | `zh-CN` |
 >
