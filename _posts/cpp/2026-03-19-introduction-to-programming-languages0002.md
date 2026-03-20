@@ -113,7 +113,7 @@ C++程序通常采用编译方式。**编译器**`compiler`是一种程序（或
 ![image](assets/img/posts/cpp/introduction/0002-2.png){: .shadow .rounded-10 }
 
 > **可选阅读**:
-> 关于编译器与解释器的优劣对比，可参阅[此处](assets/img/posts/cpp/introduction/0002-3.png){: .shadow .rounded-10 }。
+> 关于编译器与解释器的优劣对比，可参阅[此处](https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646)。
 > 
 > 编译程序的另一优势在于：分发编译程序时无需附带源代码。在非开源环境中，这对知识产权（IP）保护至关重要。
 
@@ -129,8 +129,7 @@ C++程序通常采用编译方式。**编译器**`compiler`是一种程序（或
 
 高级语言使程序员能够在无需深入了解运行平台的情况下编写程序。这不仅简化了编程过程，更显著提升了程序的可移植性。只要编写得当，我们甚至能编写出能在所有配备C++编译器的平台上运行的单一C++程序！这种为多平台设计的程序被称为**跨平台程序**`cross-platform`。
 
-![image](https://img2024.cnblogs.com/blog/1915850/202602/1915850-20260205051326595-1673236843.png)
-
+![image](assets/img/posts/cpp/introduction/0002-3.png){: .shadow .rounded-10 }。
 > **面向高级读者的说明**:
 >
 > 以下是可能影响C++代码可移植性的部分因素：
