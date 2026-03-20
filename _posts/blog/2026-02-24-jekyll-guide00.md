@@ -331,5 +331,5 @@ tags:               [blog]                           # 文章标签（可多个,
 # （1）如果在网络静态资源目录（assets）下，假设文章是assets/cpp/2026-03-21-introduce-jekyll.md, 那链接就是如下：
 [基于Jekyll的静态GitHub博客搭建](assets/cpp/2026-03-21-introduce-jekyll.md)
 # （2）但是网络静态资源目录是存放照片的，不适合放文章， 而我们的专门放文章的地方是`_posts`下， 假设文章是`_posts/cpp/2026-03-21-introduce-jekyll.md`, 那链接就是：
-[基于Jekyll的静态GitHub博客搭建]({% link _posts/cpp/2026-03-21-introduce-jekyll.md) %})
+[基于Jekyll的静态GitHub博客搭建]({% link _posts/cpp/2026-03-21-introduce-jekyll.md %})
 ```
