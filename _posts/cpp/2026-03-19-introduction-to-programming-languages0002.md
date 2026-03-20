@@ -104,16 +104,16 @@ C++程序通常采用编译方式。**编译器**`compiler`是一种程序（或
 
 以下是编译过程的简化示意图：
 
-![image](assets/img/posts/cpp/introduction/0002-1){: .shadow .rounded-10 }
+![image](assets/img/posts/cpp/introduction/0002-1.png){: .shadow .rounded-10 }
 
 或者，**解释器**`interpreter`是一种无需预先编译源代码即可直接执行指令的程序。解释器通常比编译器更灵活，但在运行程序时效率较低，因为每次运行程序都需要进行解释过程。这也意味着解释器必须安装在所有将运行解释型程序的机器上。
 
 以下是解释过程的简化示意图：
 
-![image](assets/img/posts/cpp/introduction/0002-2){: .shadow .rounded-10 }
+![image](assets/img/posts/cpp/introduction/0002-2.png){: .shadow .rounded-10 }
 
 > **可选阅读**:
-> 关于编译器与解释器的优劣对比，可参阅[此处](assets/img/posts/cpp/introduction/0002-3){: .shadow .rounded-10 }。
+> 关于编译器与解释器的优劣对比，可参阅[此处](assets/img/posts/cpp/introduction/0002-3.png){: .shadow .rounded-10 }。
 > 
 > 编译程序的另一优势在于：分发编译程序时无需附带源代码。在非开源环境中，这对知识产权（IP）保护至关重要。
 
