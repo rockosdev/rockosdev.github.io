@@ -4,7 +4,7 @@ date:               2026-03-17 03:18:00
 last_modified_at:   2026-03-17 03:30:00
 toc:                true
 categories:         [C++, Introduction/Getting Started]
-tags:               [introduction getting-started]
+tags:               [cpp, introduction getting-started, c++-tutorials]
 ---
 
 欢迎！

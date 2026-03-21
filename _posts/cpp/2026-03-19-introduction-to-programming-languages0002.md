@@ -4,7 +4,7 @@ date:               2026-03-19 07:20:00
 last_modified_at:   2026-03-19 08:30:00              
 toc:                true                             
 categories:         [C++, Introduction/Getting Started]
-tags:               [introduction getting-started]
+tags:               [cpp, introduction getting-started, programing-languages]
 ---
 
 现代计算机运行速度惊人，且日趋迅捷。然而计算机也存在显著局限：它们仅能原生理解有限指令集，必须被精确告知具体操作步骤。
