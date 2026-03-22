@@ -7,7 +7,7 @@ categories:         [C++, Introduction/Getting Started]
 tags:               [cpp, introduction getting-started, compiler-linker-and-libraries]
 ---
 
-继续我们对上一课（[0.4——C++开发入门]()）中这张图的讨论：
+继续我们对上一课（[0.4——C++开发入门](https://www.cnblogs.com/learncpp/articles/19572593)）中这张图的讨论：
 
 ![image](assets/img/posts/cpp/introduction/0005-1.png)
 
