@@ -177,7 +177,7 @@ loader.load(
         
         const loading = document.getElementById('loading');
         if (loading) {
-            loading.innerHTML = `加载模型中...<br>${percent}%<br>(${mb}MB / ${totalMb}MB)<br>`这网页能处，有事它真加载`;
+            loading.innerHTML = `加载模型中...<br>${percent}%<br>(${mb}MB / ${totalMb}MB)<br>这网页能处，有事它真加载`;
         }
     },
     function (error) {
