@@ -25,6 +25,196 @@ let backPanelMaterial = null;
 let connectionLines = [];
 let panelLight = null;
 let rainTextSprite = null;  // "雨从未迟到"文字精灵
+let earthCoreGroup = null;
+let earthPulseMeshes = [];
+let earthLatLonLines = [];
+let earthGridShellMesh = null;
+let earthGridRadius = 0;
+let orbitRing = null;
+let orbitTrackMesh = null;
+let orbitPenguin = null;
+let orbitRadius = 0;
+let orbitCenter = new THREE.Vector3();
+let orbitPenguinBaseY = 0;
+let orbitTrackWidth = 0;
+const ORBIT_PENGUIN_HEADING_OFFSET = Math.PI / 2;
+let penguinFollowEffectEnabled = false;
+let penguinFlagMesh = null;
+let penguinFlagMaterial = null;
+let penguinFlagBasePositions = null;
+let penguinFlagSegmentsX = 0;
+let penguinParticleBeam = null;
+let penguinParticleBeamMaterial = null;
+let penguinParticlePositions = null;
+let penguinParticleData = [];
+let penguinTrailLength = 0;
+let penguinFlagPoleOffset = 0;
+let penguinFlagHeightOffset = 0;
+let penguinBeamGapOffset = 0;
+let penguinFloatingTextSprite = null;
+let penguinFloatingTextHeightOffset = 0;
+
+function createPenguinFlagTexture(textureLoader) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#0b1117';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const canvasTexture = new THREE.CanvasTexture(canvas);
+    canvasTexture.colorSpace = THREE.SRGBColorSpace;
+    canvasTexture.wrapS = THREE.RepeatWrapping;
+    canvasTexture.wrapT = THREE.ClampToEdgeWrapping;
+    canvasTexture.repeat.set(1, 1);
+    canvasTexture.offset.set(0, 0);
+
+    function drawTexture(image = null) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (image) {
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        } else {
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#07131c');
+            gradient.addColorStop(1, '#163040');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        canvasTexture.needsUpdate = true;
+    }
+
+    drawTexture();
+
+    textureLoader.load(
+        './assets/textures/rain.jpg',
+        (loadedTexture) => {
+            const image = loadedTexture.image;
+            if (image) drawTexture(image);
+        },
+        undefined,
+        (error) => {
+            console.warn('旗面贴图加载失败，已使用文字底图代替:', error);
+        }
+    );
+
+    return canvasTexture;
+}
+
+function createPenguinFloatingTextSprite(flagWidth, flagHeight) {
+    if (penguinFloatingTextSprite) {
+        scene.remove(penguinFloatingTextSprite);
+        if (penguinFloatingTextSprite.geometry) {
+            penguinFloatingTextSprite.geometry.dispose();
+        }
+        if (penguinFloatingTextSprite.material.map) {
+            penguinFloatingTextSprite.material.map.dispose();
+        }
+        penguinFloatingTextSprite.material.dispose();
+        penguinFloatingTextSprite = null;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 2048;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const displayText = '(:雨从未迟到～～';
+    const charSpacing = 22;
+
+    function drawSpacedCenteredText(drawCtx, text, x, y, mode) {
+        const chars = Array.from(text);
+        const widths = chars.map((char) => drawCtx.measureText(char).width);
+        const totalWidth = widths.reduce((sum, width) => sum + width, 0) + charSpacing * Math.max(0, chars.length - 1);
+        let cursorX = x - totalWidth / 2;
+
+        chars.forEach((char, index) => {
+            const charWidth = widths[index];
+            const drawX = cursorX + charWidth / 2;
+            if (mode === 'stroke') {
+                drawCtx.strokeText(char, drawX, y);
+            } else {
+                drawCtx.fillText(char, drawX, y);
+            }
+            cursorX += charWidth + charSpacing;
+        });
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.font = '136px "Microsoft YaHei", "PingFang SC", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0, 255, 255, 0.95)';
+    ctx.shadowBlur = 12;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(40, 120, 120, 0.9)';
+    drawSpacedCenteredText(ctx, displayText, canvas.width / 2, canvas.height / 2, 'stroke');
+    ctx.fillStyle = 'rgba(120, 255, 255, 1)';
+    drawSpacedCenteredText(ctx, displayText, canvas.width / 2, canvas.height / 2, 'fill');
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+
+    const textGeometry = new THREE.PlaneGeometry(flagWidth * 1.75, flagHeight * 1.34);
+    const textMaterial = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        opacity: 0.95
+    });
+
+    penguinFloatingTextSprite = new THREE.Mesh(textGeometry, textMaterial);
+    penguinFloatingTextSprite.visible = false;
+    scene.add(penguinFloatingTextSprite);
+}
+
+function moveCameraBackToFitRadius(targetCenter, fitRadius, padding = 1.15) {
+    const direction = camera.position.clone().sub(targetCenter);
+    if (direction.lengthSq() === 0) {
+        direction.set(1, 0.35, 1);
+    }
+    direction.normalize();
+
+    const fov = THREE.MathUtils.degToRad(camera.fov);
+    const fitDistance = (fitRadius / Math.tan(fov / 2)) * padding;
+
+    camera.position.copy(targetCenter).add(direction.multiplyScalar(fitDistance));
+    controls.target.copy(targetCenter);
+    camera.updateProjectionMatrix();
+    controls.update();
+}
+
+function latLngToVector3(lat, lng, radius) {
+    const phi = THREE.MathUtils.degToRad(90 - lat);
+    const theta = THREE.MathUtils.degToRad(lng + 180);
+
+    return new THREE.Vector3(
+        -(radius * Math.sin(phi) * Math.cos(theta)),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+    );
+}
+
+function latLngToCanvas(lat, lng, width, height) {
+    return {
+        x: ((lng + 180) / 360) * width,
+        y: ((90 - lat) / 180) * height
+    };
+}
 
 // 与电脑屏幕面保持一致的旋转（用于让贴图“与电脑面平行”）
 // 注：createScreen 里屏幕 iframe 也使用同一角度
@@ -34,12 +224,64 @@ const SCREEN_ROT_X = -0.37;
 // 第 1 步：获取容器
 // ============================================
 const container = document.getElementById('canvas-container');
+
+// ============================================
+// 加载 Overlay（3D 相册）DOM 引用（新增）
+// 说明：只做“增添代码”，不影响原有 3D 电脑逻辑。
+// - 加载中：显示相册 + 进度
+// - 加载完成：显示“点击进入”按钮
+// - 点击进入：淡出并移除 overlay
+// ============================================
+
+const albumOverlay = document.getElementById('album-loading');
+const albumProgressEl = document.getElementById('progress');
+const albumLoadingTextEl = document.getElementById('loading-text');
+const albumEnterBtn = document.getElementById('enter-btn');
+
+let __albumOverlayDismissed = false;
+
+function __setAlbumProgress(text) {
+    if (albumProgressEl) albumProgressEl.textContent = text;
+}
+
+function __setAlbumLoadingText(text) {
+    if (albumLoadingTextEl) albumLoadingTextEl.textContent = text;
+}
+
+function __markAlbumReadyToEnter() {
+    if (!albumOverlay) return;
+    albumOverlay.classList.add('is-ready');
+    __setAlbumLoadingText('模型已加载完成');
+    __setAlbumProgress('');
+}
+
+function __dismissAlbumOverlay() {
+    if (__albumOverlayDismissed) return;
+    __albumOverlayDismissed = true;
+
+    // 兼容：保持原 #loading 隐藏
+    const legacyLoading = document.getElementById('loading');
+    if (legacyLoading) legacyLoading.style.display = 'none';
+
+    if (!albumOverlay) return;
+
+    albumOverlay.classList.add('is-fading');
+    window.setTimeout(() => {
+        albumOverlay.remove();
+    }, 480);
+}
+
+if (albumEnterBtn) {
+    albumEnterBtn.addEventListener('click', () => {
+        __dismissAlbumOverlay();
+    });
+}
  
 // ============================================
 // 第 2 步：创建场景（Scene）
 // ============================================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x222222);
+scene.background = new THREE.Color(0x05010a);
  
 const cssScene = new THREE.Scene();
  
@@ -144,12 +386,16 @@ loader.load(
         });
         
         autoFitCamera(model);
+        // 记录“刚进入电脑时”的视角（用于 U 键恢复）
+        // 必须在 autoFitCamera + controls.target 更新之后保存，避免误记录默认视角。
+        __saveInitialViewStateOnce();
         scene.add(model);
         
         // ========================================
         // 新增：计算电脑屏幕四角位置和前上方位置
         // ========================================
         calculateLaptopGeometry(model);
+        createEarthCoreEnvironment(model);
         
         // 创建前上方信息板（初始隐藏）
         createFrontUpperPanel();
@@ -167,18 +413,21 @@ loader.load(
         // 新增：设置R键监听
         // ========================================
         setupRKeyListener();
-        
-        document.getElementById('loading').style.display = 'none';
+
+        // 原逻辑：加载完成后隐藏 #loading。
+        // 现在：不直接让用户“瞬间进入”，而是提示“点击进入”后再淡出相册 overlay。
+        const legacyLoading = document.getElementById('loading');
+        if (legacyLoading) legacyLoading.style.display = 'none';
+        __markAlbumReadyToEnter();
     },
     function (progress) {
         const percent = (progress.loaded / progress.total * 100).toFixed(1);
         const mb = (progress.loaded / 1024 / 1024).toFixed(1);
         const totalMb = (progress.total / 1024 / 1024).toFixed(1);
-        
-        const loading = document.getElementById('loading');
-        if (loading) {
-            loading.innerHTML = `加载模型中...<br>${percent}%<br>(${mb}MB / ${totalMb}MB)<br>这网页能处，有事它真加载`;
-        }
+
+        // 注意：不能再用 innerHTML 覆盖容器，否则会把相册 overlay 的 DOM 删掉。
+        __setAlbumLoadingText('加载模型中...');
+        __setAlbumProgress(`${percent}% (${mb}MB / ${totalMb}MB)`);
     },
     function (error) {
         console.error('模型加载失败:', error);
@@ -255,6 +504,408 @@ function calculateLaptopGeometry(model) {
     
     console.log('屏幕四角:', laptopScreenCorners);
     console.log('前上方位置（60度）:', laptopFrontUpperPosition);
+}
+
+// ============================================
+// 新增：创建“地心”氛围与地球经纬网
+// 说明：只增强场景环境，不改变原有电脑交互、按键与面板功能。
+// ============================================
+
+function createEarthCoreEnvironment(model) {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    const baseRadius = Math.max(size.x, size.y, size.z) * 1.7;
+
+    earthCoreGroup = new THREE.Group();
+    earthCoreGroup.position.copy(center);
+    scene.add(earthCoreGroup);
+
+    const shellRadius = baseRadius * 3.1;
+    earthGridRadius = shellRadius;
+    orbitTrackWidth = Math.max(baseRadius * 0.22 * 5, baseRadius * 0.5);
+    orbitRadius = earthGridRadius + orbitTrackWidth * 1.5;
+    const shellColor = 0x9fefff;
+    const latCount = 12;
+    const lonCount = 18;
+
+    const shellGeometry = new THREE.SphereGeometry(shellRadius, 48, 48);
+    const shellMaterial = new THREE.MeshBasicMaterial({
+        color: shellColor,
+        transparent: true,
+        opacity: 0.05,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+    earthGridShellMesh = new THREE.Mesh(shellGeometry, shellMaterial);
+    earthCoreGroup.add(earthGridShellMesh);
+
+    for (let i = 1; i < latCount; i++) {
+        const v = i / latCount;
+        const phi = -Math.PI / 2 + v * Math.PI;
+        const cosPhi = Math.cos(phi);
+        const sinPhi = Math.sin(phi);
+        const points = [];
+
+        for (let j = 0; j <= 180; j++) {
+            const theta = (j / 180) * Math.PI * 2;
+            points.push(new THREE.Vector3(
+                shellRadius * cosPhi * Math.cos(theta),
+                shellRadius * sinPhi,
+                shellRadius * cosPhi * Math.sin(theta)
+            ));
+        }
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({
+            color: shellColor,
+            transparent: true,
+            opacity: 0.22
+        });
+        const line = new THREE.LineLoop(geometry, material);
+        earthCoreGroup.add(line);
+        earthLatLonLines.push(line);
+    }
+
+    for (let i = 0; i < lonCount; i++) {
+        const theta = (i / lonCount) * Math.PI * 2;
+        const points = [];
+
+        for (let j = 0; j <= 180; j++) {
+            const phi = -Math.PI / 2 + (j / 180) * Math.PI;
+            const cosPhi = Math.cos(phi);
+            const sinPhi = Math.sin(phi);
+            points.push(new THREE.Vector3(
+                shellRadius * cosPhi * Math.cos(theta),
+                shellRadius * sinPhi,
+                shellRadius * cosPhi * Math.sin(theta)
+            ));
+        }
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({
+            color: shellColor,
+            transparent: true,
+            opacity: 0.18
+        });
+        const line = new THREE.Line(geometry, material);
+        earthCoreGroup.add(line);
+        earthLatLonLines.push(line);
+    }
+
+    const innerCoreLight = new THREE.PointLight(0xff7a1a, 18, baseRadius * 7, 2);
+    innerCoreLight.position.set(0, 0, 0);
+    earthCoreGroup.add(innerCoreLight);
+
+    const coolRimLight = new THREE.PointLight(0x3bc9ff, 6, baseRadius * 10, 2);
+    coolRimLight.position.set(baseRadius * 0.8, baseRadius * 0.3, baseRadius * 1.4);
+    earthCoreGroup.add(coolRimLight);
+
+    const sceneFitRadius = orbitRadius + orbitTrackWidth * 0.5;
+    moveCameraBackToFitRadius(center, sceneFitRadius, 1.2);
+
+    createOrbitRingAndPenguin(center, baseRadius);
+
+    console.log('🌍 地心经纬网环境已创建');
+}
+
+function createOrbitRingAndPenguin(center, baseRadius) {
+    orbitCenter.set(center.x, 0, center.z);
+
+    const penguinLoader = new GLTFLoader();
+    penguinLoader.load(
+        './assets/models/qq.glb',
+        function (gltf) {
+            orbitPenguin = gltf.scene;
+
+            const penguinBox = new THREE.Box3().setFromObject(orbitPenguin);
+            const penguinSize = new THREE.Vector3();
+            penguinBox.getSize(penguinSize);
+            const penguinMaxDim = Math.max(penguinSize.x, penguinSize.y, penguinSize.z) || 1;
+            const targetSize = baseRadius * 0.22;
+            const scale = targetSize / penguinMaxDim;
+            orbitPenguin.scale.setScalar(scale);
+
+            createPenguinFollowEffects(targetSize);
+
+            createOrbitRingVisual();
+
+            orbitPenguin.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.castShadow = false;
+                    child.receiveShadow = false;
+                }
+            });
+
+            orbitPenguinBaseY = orbitCenter.y + targetSize * 0.45;
+            orbitPenguin.position.set(orbitCenter.x + orbitRadius, orbitPenguinBaseY, orbitCenter.z);
+            scene.add(orbitPenguin);
+        },
+        undefined,
+        function (error) {
+            console.error('企鹅模型加载失败:', error);
+        }
+    );
+}
+
+function createOrbitRingVisual() {
+    if (orbitTrackMesh) {
+        scene.remove(orbitTrackMesh);
+        orbitTrackMesh.geometry.dispose();
+        orbitTrackMesh.material.dispose();
+        orbitTrackMesh = null;
+    }
+
+    if (orbitRing) {
+        scene.remove(orbitRing);
+        orbitRing.geometry.dispose();
+        orbitRing.material.dispose();
+        orbitRing = null;
+    }
+
+    if (orbitRadius <= 0 || orbitTrackWidth <= 0) return;
+
+    const innerRadius = Math.max(orbitRadius - orbitTrackWidth * 0.5, 10);
+    const outerRadius = orbitRadius + orbitTrackWidth * 0.5;
+
+    const trackGeometry = new THREE.RingGeometry(innerRadius, outerRadius, 180);
+    const trackMaterial = new THREE.MeshBasicMaterial({
+        color: 0x8ffcff,
+        transparent: true,
+        opacity: 0.14,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+    orbitTrackMesh = new THREE.Mesh(trackGeometry, trackMaterial);
+    orbitTrackMesh.rotation.x = -Math.PI / 2;
+    orbitTrackMesh.position.set(orbitCenter.x, orbitCenter.y + 2, orbitCenter.z);
+    scene.add(orbitTrackMesh);
+
+    const ringCurve = new THREE.EllipseCurve(0, 0, orbitRadius, orbitRadius, 0, Math.PI * 2, false, 0);
+    const ringPoints2D = ringCurve.getPoints(240);
+    const ringPoints3D = ringPoints2D.map((point) => new THREE.Vector3(
+        orbitCenter.x + point.x,
+        orbitCenter.y + 5,
+        orbitCenter.z + point.y
+    ));
+
+    const ringGeometry = new THREE.BufferGeometry().setFromPoints(ringPoints3D);
+    const ringMaterial = new THREE.LineBasicMaterial({
+        color: 0xb8ffff,
+        transparent: true,
+        opacity: 0.85
+    });
+    orbitRing = new THREE.LineLoop(ringGeometry, ringMaterial);
+    scene.add(orbitRing);
+}
+
+function updateEarthCoreEnvironment() {
+    if (!earthCoreGroup) return;
+
+    const time = Date.now() * 0.00025;
+    earthCoreGroup.rotation.y += 0.0012;
+    earthCoreGroup.rotation.z = Math.sin(time) * 0.05;
+
+    if (earthGridRadius > 0) {
+        const distanceToEarthCore = camera.position.distanceTo(earthCoreGroup.position);
+        const shouldShowLatLon = distanceToEarthCore > earthGridRadius;
+        if (earthGridShellMesh) {
+            earthGridShellMesh.visible = shouldShowLatLon;
+        }
+        earthLatLonLines.forEach((line) => {
+            line.visible = shouldShowLatLon;
+        });
+    }
+
+    earthPulseMeshes.forEach((mesh, index) => {
+        const pulse = 1 + Math.sin(time * 6 + index * 0.8) * 0.015;
+        mesh.scale.setScalar(pulse);
+        mesh.material.opacity = index === 0
+            ? 0.1 + Math.sin(time * 7) * 0.018
+            : 0.04 + Math.sin(time * 5 + 1.2) * 0.01;
+    });
+
+    updateOrbitPenguin(time);
+}
+
+function updateOrbitPenguin(time) {
+    if (!orbitPenguin || orbitRadius <= 0) return;
+
+    const orbitSpeed = -time * 1.8;
+    const x = orbitCenter.x + Math.cos(orbitSpeed) * orbitRadius;
+    const z = orbitCenter.z + Math.sin(orbitSpeed) * orbitRadius;
+    const dirX = -Math.sin(orbitSpeed);
+    const dirZ = Math.cos(orbitSpeed);
+    const forwardDirection = new THREE.Vector3(dirX, 0, dirZ).normalize();
+    const heading = Math.atan2(dirX, dirZ) + ORBIT_PENGUIN_HEADING_OFFSET;
+
+    orbitPenguin.position.set(
+        x,
+        orbitPenguinBaseY + Math.sin(time * 10) * 8,
+        z
+    );
+    orbitPenguin.rotation.set(0, heading, 0);
+
+    updatePenguinFollowEffects(time, forwardDirection);
+}
+
+function createPenguinFollowEffects(targetSize) {
+    const textureLoader = new THREE.TextureLoader();
+    const flagTexture = createPenguinFlagTexture(textureLoader);
+
+    const flagWidth = targetSize * 2.8;
+    const flagHeight = targetSize * 1.55;
+    penguinFlagSegmentsX = 24;
+    const flagSegmentsY = 12;
+
+    const flagGeometry = new THREE.PlaneGeometry(flagWidth, flagHeight, penguinFlagSegmentsX, flagSegmentsY);
+    flagGeometry.translate(flagWidth * 0.5, 0, 0);
+    penguinFlagBasePositions = new Float32Array(flagGeometry.attributes.position.array);
+
+    penguinFlagMaterial = new THREE.MeshBasicMaterial({
+        map: flagTexture,
+        transparent: true,
+        opacity: 0.95,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+
+    penguinFlagMesh = new THREE.Mesh(flagGeometry, penguinFlagMaterial);
+    penguinFlagMesh.visible = false;
+    scene.add(penguinFlagMesh);
+
+    penguinTrailLength = targetSize * 8.5;
+    penguinFlagPoleOffset = targetSize * 0.9;
+    penguinFlagHeightOffset = targetSize * 0.75;
+    penguinBeamGapOffset = targetSize * 2.7;
+    penguinFloatingTextHeightOffset = targetSize * 2.7;
+
+    createPenguinFloatingTextSprite(flagWidth, flagHeight);
+
+    const particleCount = 180;
+    const particleGeometry = new THREE.BufferGeometry();
+    penguinParticlePositions = new Float32Array(particleCount * 3);
+    penguinParticleData = [];
+
+    for (let i = 0; i < particleCount; i++) {
+        penguinParticleData.push(createPenguinBeamParticle(Math.random()));
+    }
+
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(penguinParticlePositions, 3));
+    penguinParticleBeamMaterial = new THREE.PointsMaterial({
+        color: 0x9fefff,
+        size: targetSize * 0.18,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true
+    });
+
+    penguinParticleBeam = new THREE.Points(particleGeometry, penguinParticleBeamMaterial);
+    penguinParticleBeam.visible = false;
+    scene.add(penguinParticleBeam);
+}
+
+function createPenguinBeamParticle(seed = 0) {
+    return {
+        progress: seed,
+        speed: 0.008 + Math.random() * 0.018,
+        spread: 84 + Math.random() * 192,
+        swirl: Math.random() * Math.PI * 2,
+        rise: (Math.random() - 0.5) * 108,
+        drift: 0.6 + Math.random() * 1.8
+    };
+}
+
+function togglePenguinFollowEffect() {
+    penguinFollowEffectEnabled = !penguinFollowEffectEnabled;
+
+    if (penguinFlagMesh) penguinFlagMesh.visible = penguinFollowEffectEnabled;
+    if (penguinParticleBeam) penguinParticleBeam.visible = penguinFollowEffectEnabled;
+    if (penguinFloatingTextSprite) penguinFloatingTextSprite.visible = penguinFollowEffectEnabled;
+
+    console.log(penguinFollowEffectEnabled ? '🏁 已开启企鹅旗帜与粒子束特效' : '🏁 已关闭企鹅旗帜与粒子束特效');
+}
+
+function updatePenguinFollowEffects(time, forwardDirection) {
+    if (!orbitPenguin || !penguinFlagMesh || !penguinParticleBeam || !penguinFlagBasePositions) return;
+    if (!penguinFollowEffectEnabled) return;
+
+    const backDirection = forwardDirection.clone().multiplyScalar(-1);
+    const sideDirection = new THREE.Vector3().crossVectors(backDirection, new THREE.Vector3(0, 1, 0)).normalize();
+    const upDirection = new THREE.Vector3().crossVectors(sideDirection, backDirection).normalize();
+    const frontDirection = forwardDirection.clone();
+    const frontFlagSideDirection = sideDirection.clone().multiplyScalar(-1);
+
+    const flagAnchor = orbitPenguin.position.clone()
+        .add(frontDirection.clone().multiplyScalar(penguinFlagPoleOffset))
+        .add(upDirection.clone().multiplyScalar(penguinFlagHeightOffset));
+
+    penguinFlagMesh.position.copy(flagAnchor);
+    penguinFlagMesh.setRotationFromMatrix(
+        new THREE.Matrix4().makeBasis(frontDirection, upDirection, frontFlagSideDirection)
+    );
+
+    if (penguinFloatingTextSprite) {
+        penguinFloatingTextSprite.position.copy(orbitPenguin.position)
+            .add(upDirection.clone().multiplyScalar(penguinFloatingTextHeightOffset))
+            .add(frontDirection.clone().multiplyScalar(penguinFlagPoleOffset * 0.2));
+        penguinFloatingTextSprite.setRotationFromMatrix(
+            new THREE.Matrix4().makeBasis(frontDirection, upDirection, frontFlagSideDirection)
+        );
+        penguinFloatingTextSprite.rotateZ(Math.sin(time * 3) * 0.03);
+    }
+
+    const flagPositions = penguinFlagMesh.geometry.attributes.position;
+
+    for (let i = 0; i < flagPositions.count; i++) {
+        const ix = i * 3;
+        const baseX = penguinFlagBasePositions[ix];
+        const baseY = penguinFlagBasePositions[ix + 1];
+        const normalizedX = Math.max(0, baseX / Math.max(1, penguinTrailLength * 0.33));
+        const waveA = Math.sin(baseX * 0.045 + time * 18) * (4 + normalizedX * 10);
+        const waveB = Math.cos(baseX * 0.025 + time * 11 + baseY * 0.03) * (2 + normalizedX * 5);
+        const flutter = Math.sin(-time * 24 + (i % (penguinFlagSegmentsX + 1)) * 0.55) * normalizedX * 2.2;
+
+        flagPositions.array[ix] = baseX;
+        flagPositions.array[ix + 1] = baseY + flutter;
+        flagPositions.array[ix + 2] = waveA + waveB;
+    }
+    flagPositions.needsUpdate = true;
+    penguinFlagMesh.geometry.computeVertexNormals();
+
+    const particleAttr = penguinParticleBeam.geometry.attributes.position;
+    const beamStart = orbitPenguin.position.clone()
+        .add(frontDirection.clone().multiplyScalar(penguinFlagPoleOffset + penguinBeamGapOffset + penguinTrailLength * 0.08))
+        .add(upDirection.clone().multiplyScalar(penguinFlagHeightOffset * 0.2));
+
+    for (let i = 0; i < penguinParticleData.length; i++) {
+        const p = penguinParticleData[i];
+        p.progress += p.speed;
+        if (p.progress > 1) {
+            penguinParticleData[i] = createPenguinBeamParticle(0);
+            Object.assign(p, penguinParticleData[i]);
+        }
+
+        const distance = p.progress * penguinTrailLength;
+        const swirl = p.swirl - time * p.drift - p.progress * 8;
+        const radial = p.progress * p.spread;
+
+        const pos = beamStart.clone()
+            .add(frontDirection.clone().multiplyScalar(distance))
+            .add(sideDirection.clone().multiplyScalar(Math.cos(swirl) * radial))
+            .add(upDirection.clone().multiplyScalar(Math.sin(swirl) * radial + p.rise));
+
+        particleAttr.array[i * 3] = pos.x;
+        particleAttr.array[i * 3 + 1] = pos.y;
+        particleAttr.array[i * 3 + 2] = pos.z;
+    }
+
+    particleAttr.needsUpdate = true;
 }
  
 // ============================================
@@ -374,73 +1025,14 @@ function createRainText() {
 // ============================================
  
 function createConnectionLines() {
-    if (!laptopScreenCorners || !laptopFrontUpperPosition) return;
-    
-    const corners = laptopScreenCorners;
-    const frontPos = laptopFrontUpperPosition;
-    
-    const panelWidth = 400;
-    const panelHeight = 300;
-    const halfW = panelWidth / 2;
-    const halfH = panelHeight / 2;
-    
-    // 计算信息板四角（考虑信息板旋转；忽略缩放，保持与原效果一致）
-    const panelQuat = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(SCREEN_ROT_X, 0, 0)
-    );
-    const localCorners = [
-        new THREE.Vector3(-halfW, +halfH, 0),
-        new THREE.Vector3(+halfW, +halfH, 0),
-        new THREE.Vector3(-halfW, -halfH, 0),
-        new THREE.Vector3(+halfW, -halfH, 0)
-    ];
-    const frontCorners = localCorners.map((v) => v.clone().applyQuaternion(panelQuat).add(frontPos));
-    
-    const screenCorners = [
-        corners.frontTopLeft,
-        corners.frontTopRight,
-        corners.frontBottomLeft,
-        corners.frontBottomRight
-    ];
-    
-    // 创建四条连接线（初始隐藏）
-    const lineMaterial = new THREE.LineBasicMaterial({
-        color: 0x00ffff,
-        transparent: true,
-        opacity: 0
+    connectionLines.forEach((line) => {
+        scene.remove(line);
+        if (line.geometry) line.geometry.dispose();
+        if (line.material) line.material.dispose();
     });
-    
-    const tubeMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00ffff,
-        transparent: true,
-        opacity: 0
-    });
-    
-    for (let i = 0; i < 4; i++) {
-        const from = screenCorners[i];
-        const to = frontCorners[i];
-        
-        // 创建上升曲线
-        const midPoint = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
-        midPoint.y += 80;  // 向上弯曲
-        
-        const curve = new THREE.QuadraticBezierCurve3(from, midPoint, to);
-        const points = curve.getPoints(50);
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        
-        const line = new THREE.Line(geometry, lineMaterial.clone());
-        line.name = `connectionLine_${i}`;
-        scene.add(line);
-        connectionLines.push(line);
-        
-        const tubeGeometry = new THREE.TubeGeometry(curve, 20, 2, 8, false);
-        const tube = new THREE.Mesh(tubeGeometry, tubeMaterial.clone());
-        tube.name = `connectionTube_${i}`;
-        scene.add(tube);
-        connectionLines.push(tube);
-    }
-    
-    console.log('连接线已创建');
+    connectionLines = [];
+
+    console.log('已移除电脑四角引出的连接线');
 }
 
 // ============================================
@@ -448,17 +1040,11 @@ function createConnectionLines() {
 // ============================================
 
 function setupRKeyListener() {
-    console.log('⌨️ R键监听已启用');
-    
+    console.log('⌨️ R键已设置为企鹅旗帜特效开关');
+
     window.addEventListener('keydown', (e) => {
         if (e.key === 'r' || e.key === 'R') {
-            console.log('🎯 R键被按下');
-            
-            if (!state.isPanelVisible && !state.isAnimating) {
-                showPanel();
-            } else if (state.isPanelVisible && !state.isAnimating) {
-                hidePanel();
-            }
+            togglePenguinFollowEffect();
         }
     });
 }
@@ -809,7 +1395,7 @@ function setupVKeyToggleVideoOnScreen({ iframe, video, loadingHint }) {
 // ============================================
 function setupDebugControls(screenObject) {
     console.log('=== 调试模式已开启 ===');
-    console.log('R     : 触发/隐藏信息板映射');
+    console.log('R     : 开关企鹅尾随旗帜 + 粒子束特效');
     console.log('方向键 ↑↓←→ : 移动屏幕位置');
     console.log('W/S : 前后移动');
     console.log('Q/E : 旋转 X 轴');
@@ -860,6 +1446,7 @@ function animate() {
     
     // 新增：更新面板动画
     updatePanelAnimation();
+    updateEarthCoreEnvironment();
     
     renderer.render(scene, camera);
     cssRenderer.render(cssScene, camera);
@@ -916,18 +1503,8 @@ function __restoreInitialViewState() {
     controls.update();
 }
 
-// 模型加载并 autoFitCamera 生效后，再记录“刚进入电脑时”的视角
-(function __captureInitialViewWhenReady() {
-    const loadingEl = document.getElementById('loading');
-    const isLoaded = !loadingEl || loadingEl.style.display === 'none';
-    if (isLoaded) {
-        requestAnimationFrame(() => {
-            __saveInitialViewStateOnce();
-        });
-        return;
-    }
-    requestAnimationFrame(__captureInitialViewWhenReady);
-})();
+// 说明：初始视角的保存已经挪到 GLTF onLoad 里（autoFitCamera 之后），
+// 不再通过 #loading 的 display 轮询判断，避免误判导致恢复视角错误。
 
 // 监听 U 键
 window.addEventListener('keydown', (e) => {
