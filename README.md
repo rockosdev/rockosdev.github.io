@@ -1,4 +1,4 @@
-<img width="1896" height="1183" alt="image" src="https://github.com/user-attachments/assets/8865f50e-5624-43d5-af14-97b7160137c0" />## Prerequisites
+## Prerequisites
 Follow the instructions in the [Jekyll Docs](https://jekyllrb.com/docs/installation/) to complete the installation of the basic environment. [Git](https://git-scm.com/) also needs to be installed.
 
 ## Usage
