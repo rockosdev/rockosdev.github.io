@@ -1,7 +1,7 @@
 ---
 title:              "《Learn C++》笔记 0.7 编译你的第一个程序"
-date:               2026-03-26 06:38:00
-last_modified_at:   2026-03-26 07:39:00
+date:               2026-03-25 06:38:00
+last_modified_at:   2026-03-25 07:39:00
 toc:                true
 categories:         [C++, Introduction/Getting Started]
 tags:               [cpp, introduction getting-started, compiling-your-first-program]
