@@ -355,7 +355,7 @@ std::cin.get(); // get one more char from the user (waits for user to press ente
 
 # 我的IDE中编译、构建、重新构建、清理和运行/启动选项有何区别？
 
-在[第0.5课——编译器、链接器和库介绍]({% _posts/cpp/2026-03-21-introduction-to-the-compiler-linker-and-libraries0005.md %})中，我们展示了生成可执行文件的过程：程序中的每个代码文件先被编译成目标文件，然后将目标文件链接成可执行文件。
+在[第0.5课——编译器、链接器和库介绍]({% link _posts/cpp/2026-03-21-introduction-to-the-compiler-linker-and-libraries0005.md %})中，我们展示了生成可执行文件的过程：程序中的每个代码文件先被编译成目标文件，然后将目标文件链接成可执行文件。
 
 当代码文件被编译时，IDE 可能会将生成的目标文件缓存（保存）到磁盘。缓存（发音类似“cash”）是存储频繁访问数据的位置，以便后续快速检索。这样，当程序未来再次编译时，未修改的代码文件无需重新编译——可直接复用上次缓存的对象文件（而非重新生成）。这能显著缩短编译时间（代价是占用少量磁盘空间）。
 
