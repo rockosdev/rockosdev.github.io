@@ -1,5 +1,5 @@
 ---
-title:              "《Learn C++》笔记 0.3 对象与变量介绍"
+title:              "《Learn C++》笔记 0.3 C/C++介绍"
 date:               2026-03-20 03:18:00
 last_modified_at:   2026-03-27 03:30:00
 toc:                true
