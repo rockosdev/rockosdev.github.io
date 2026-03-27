@@ -42,6 +42,8 @@ let __loadedModel = null;
 let __sceneFocusTarget = new THREE.Vector3();
 let __mobileSceneFocusTarget = new THREE.Vector3();
 let __sceneFitRadius = 0;
+let __mobileSceneFitRadius = 0;
+let __mobileOverviewSamplePoints = [];
 let __screenObject = null;
 let __desktopInitialViewCaptured = false;
 let __mobileInitialViewCaptured = false;
@@ -52,12 +54,16 @@ const __screenForward = new THREE.Vector3();
 const __screenToCamera = new THREE.Vector3();
 
 const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
-    direction: new THREE.Vector3(0.08, 0.18, 1),
-    padding: 1.5
+    direction: new THREE.Vector3(-0.02, 0.14, 1),
+    padding: 1.72,
+    targetNdc: new THREE.Vector2(0, 0.12)
 };
 
 function isMobileLayout() {
-    return window.innerWidth <= 900 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    const ua = navigator.userAgent || '';
+    const isMobileUA = /Android|iPhone|iPod|Mobile|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const hasTouch = navigator.maxTouchPoints > 0;
+    return isMobileUA && hasTouch;
 }
 
 function getCurrentViewStateKey() {
@@ -66,8 +72,8 @@ function getCurrentViewStateKey() {
 
 function updateResponsiveControlsBehavior() {
     if (isMobileLayout()) {
-        controls.enablePan = false;
-        controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+        controls.enablePan = true;
+        controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
         return;
     }
 
@@ -231,19 +237,113 @@ function applyResponsiveCameraFit() {
     const targetCenter = isMobileLayout()
         ? __mobileSceneFocusTarget.clone()
         : __sceneFocusTarget.clone();
+    const fitRadius = isMobileLayout() && __mobileSceneFitRadius > 0
+        ? __mobileSceneFitRadius
+        : __sceneFitRadius;
 
     if (isMobileLayout()) {
         const direction = MOBILE_OVERVIEW_CAMERA_COMPOSITION.direction.clone().normalize();
-        const fitDistance = getCameraFitDistance(__sceneFitRadius, MOBILE_OVERVIEW_CAMERA_COMPOSITION.padding);
+        const fitDistance = getCameraFitDistance(fitRadius, MOBILE_OVERVIEW_CAMERA_COMPOSITION.padding);
 
         camera.position.copy(targetCenter).add(direction.multiplyScalar(fitDistance));
         controls.target.copy(targetCenter);
         camera.updateProjectionMatrix();
         controls.update();
+        applyMobileScreenSpaceCompensation();
         return;
     }
 
     moveCameraBackToFitRadius(targetCenter, __sceneFitRadius, 1.2);
+}
+
+function rebuildMobileOverviewState(modelBounds, shellRadius, orbitVerticalReach) {
+    const mobileOverviewBounds = new THREE.Box3();
+    const sphereMin = __sceneFocusTarget.clone().addScalar(-shellRadius);
+    const sphereMax = __sceneFocusTarget.clone().addScalar(shellRadius);
+
+    mobileOverviewBounds.expandByPoint(sphereMin);
+    mobileOverviewBounds.expandByPoint(sphereMax);
+    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
+        orbitCenter.x - orbitRadius,
+        orbitCenter.y - orbitVerticalReach,
+        orbitCenter.z - orbitRadius
+    ));
+    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
+        orbitCenter.x + orbitRadius,
+        orbitCenter.y + orbitVerticalReach,
+        orbitCenter.z + orbitRadius
+    ));
+    mobileOverviewBounds.expandByPoint(modelBounds.min);
+    mobileOverviewBounds.expandByPoint(modelBounds.max);
+
+    const mobileSphere = new THREE.Sphere();
+    mobileOverviewBounds.getBoundingSphere(mobileSphere);
+    __mobileSceneFocusTarget.copy(mobileSphere.center);
+    __mobileSceneFocusTarget.y += shellRadius * 0.14;
+    __mobileSceneFitRadius = mobileSphere.radius;
+
+    __mobileOverviewSamplePoints = [
+        __mobileSceneFocusTarget.clone(),
+        new THREE.Vector3(__sceneFocusTarget.x, __sceneFocusTarget.y + shellRadius, __sceneFocusTarget.z),
+        new THREE.Vector3(__sceneFocusTarget.x, __sceneFocusTarget.y - shellRadius * 0.55, __sceneFocusTarget.z),
+        new THREE.Vector3(orbitCenter.x + orbitRadius, orbitCenter.y + orbitVerticalReach, orbitCenter.z),
+        new THREE.Vector3(orbitCenter.x - orbitRadius, orbitCenter.y + orbitVerticalReach, orbitCenter.z),
+        new THREE.Vector3(orbitCenter.x, orbitCenter.y + orbitVerticalReach, orbitCenter.z + orbitRadius),
+        new THREE.Vector3(orbitCenter.x, orbitCenter.y + orbitVerticalReach, orbitCenter.z - orbitRadius),
+        modelBounds.getCenter(new THREE.Vector3()),
+        modelBounds.max.clone()
+    ];
+
+    if (orbitPenguin) {
+        __mobileOverviewSamplePoints.push(orbitPenguin.position.clone());
+    }
+}
+
+function applyMobileScreenSpaceCompensation() {
+    if (!isMobileLayout() || __mobileOverviewSamplePoints.length === 0) return;
+
+    const desiredNdc = MOBILE_OVERVIEW_CAMERA_COMPOSITION.targetNdc;
+
+    for (let i = 0; i < 2; i++) {
+        let sumX = 0;
+        let sumY = 0;
+        let count = 0;
+
+        __mobileOverviewSamplePoints.forEach((point) => {
+            const projected = point.clone().project(camera);
+            if (Number.isFinite(projected.x) && Number.isFinite(projected.y) && Number.isFinite(projected.z)) {
+                sumX += projected.x;
+                sumY += projected.y;
+                count += 1;
+            }
+        });
+
+        if (!count) return;
+
+        const currentNdcX = sumX / count;
+        const currentNdcY = sumY / count;
+        const deltaX = desiredNdc.x - currentNdcX;
+        const deltaY = desiredNdc.y - currentNdcY;
+
+        if (Math.abs(deltaX) < 0.01 && Math.abs(deltaY) < 0.01) return;
+
+        const distanceToTarget = camera.position.distanceTo(controls.target);
+        const visibleHeight = 2 * distanceToTarget * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+        const visibleWidth = visibleHeight * camera.aspect;
+
+        const forward = camera.getWorldDirection(new THREE.Vector3()).normalize();
+        const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+        const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+
+        const offset = new THREE.Vector3()
+            .add(right.multiplyScalar(-deltaX * visibleWidth * 0.5))
+            .add(up.multiplyScalar(-deltaY * visibleHeight * 0.5));
+
+        camera.position.add(offset);
+        controls.target.add(offset);
+        camera.updateProjectionMatrix();
+        controls.update();
+    }
 }
 
 // 与电脑屏幕保持一致的 X 轴倾角。
@@ -511,6 +611,7 @@ function createEarthCoreEnvironment(model) {
     earthGridRadius = shellRadius;
     orbitTrackWidth = Math.max(baseRadius * 0.22 * 5, baseRadius * 0.5);
     orbitRadius = earthGridRadius + orbitTrackWidth * 1.5;
+    orbitCenter.set(center.x, 0, center.z);
     const shellColor = 0x9fefff;
     const latCount = 12;
     const lonCount = 18;
@@ -589,30 +690,10 @@ function createEarthCoreEnvironment(model) {
 
     const sceneFitRadius = orbitRadius + orbitTrackWidth * 0.5;
     __sceneFocusTarget.copy(center);
-    __mobileSceneFocusTarget.set(center.x, (center.y + orbitCenter.y) * 0.5, center.z);
-
-    const mobileOverviewBounds = new THREE.Box3();
-    const mobileSphereMin = center.clone().addScalar(-shellRadius);
-    const mobileSphereMax = center.clone().addScalar(shellRadius);
-    mobileOverviewBounds.expandByPoint(mobileSphereMin);
-    mobileOverviewBounds.expandByPoint(mobileSphereMax);
 
     const orbitVerticalReach = Math.max(baseRadius * 0.22 * 1.45 + 8, baseRadius * 0.5);
-    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
-        orbitCenter.x - orbitRadius,
-        orbitCenter.y - orbitVerticalReach,
-        orbitCenter.z - orbitRadius
-    ));
-    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
-        orbitCenter.x + orbitRadius,
-        orbitCenter.y + orbitVerticalReach,
-        orbitCenter.z + orbitRadius
-    ));
-    mobileOverviewBounds.expandByPoint(box.min);
-    mobileOverviewBounds.expandByPoint(box.max);
-    mobileOverviewBounds.getCenter(__mobileSceneFocusTarget);
-
     __sceneFitRadius = sceneFitRadius;
+    rebuildMobileOverviewState(box, shellRadius, orbitVerticalReach);
 
     // 桌面端与移动端都先进入“经纬网球 + 轨道 + 电脑”的总览构图。
     applyResponsiveCameraFit();
@@ -623,8 +704,6 @@ function createEarthCoreEnvironment(model) {
 }
 
 function createOrbitRingAndPenguin(center, baseRadius) {
-    orbitCenter.set(center.x, 0, center.z);
-
     const penguinLoader = new GLTFLoader();
     penguinLoader.load(
         './assets/models/qq.glb',
@@ -653,6 +732,19 @@ function createOrbitRingAndPenguin(center, baseRadius) {
             orbitPenguinBaseY = orbitCenter.y + targetSize * 0.45;
             orbitPenguin.position.set(orbitCenter.x + orbitRadius, orbitPenguinBaseY, orbitCenter.z);
             scene.add(orbitPenguin);
+
+            if (__loadedModel) {
+                const modelBounds = new THREE.Box3().setFromObject(__loadedModel);
+                const shellRadius = earthGridRadius;
+                const orbitVerticalReach = Math.max(targetSize * 1.45 + 8, baseRadius * 0.5);
+                rebuildMobileOverviewState(modelBounds, shellRadius, orbitVerticalReach);
+
+                if (isMobileLayout() && !__albumOverlayDismissed) {
+                    applyResponsiveCameraFit();
+                    __saveInitialViewState('mobile', true);
+                    __mobileInitialViewCaptured = true;
+                }
+            }
         },
         undefined,
         function (error) {
@@ -1222,9 +1314,9 @@ const __initialViewState = {
     }
 };
 
-function __saveInitialViewState(viewKey = getCurrentViewStateKey()) {
+function __saveInitialViewState(viewKey = getCurrentViewStateKey(), force = false) {
     const targetState = __initialViewState[viewKey];
-    if (!targetState || targetState.saved) return;
+    if (!targetState || (targetState.saved && !force)) return;
 
     targetState.cameraPosition.copy(camera.position);
     targetState.controlsTarget.copy(controls.target);
