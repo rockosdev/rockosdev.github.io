@@ -41,6 +41,18 @@ let penguinFloatingTextHeightOffset = 0;
 let __loadedModel = null;
 let __sceneFocusTarget = new THREE.Vector3();
 let __sceneFitRadius = 0;
+let __screenObject = null;
+
+const __screenWorldPosition = new THREE.Vector3();
+const __screenWorldQuaternion = new THREE.Quaternion();
+const __screenForward = new THREE.Vector3();
+const __screenToCamera = new THREE.Vector3();
+
+const MOBILE_CAMERA_COMPOSITION = {
+    targetOffset: { x: 0, y: 45, z: 0 },
+    positionOffsetFactor: { x: 0.12, y: 0.18, z: 1.18 },
+    distancePadding: 3.2
+};
 
 function isMobileLayout() {
     return window.innerWidth <= 900 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
@@ -225,6 +237,22 @@ function updateResponsiveScreenTransform(screenObject) {
         SCREEN_BASE_TRANSFORM.scale.y,
         SCREEN_BASE_TRANSFORM.scale.z
     );
+}
+
+function updateScreenFacingVisibility() {
+    if (!__screenObject) return;
+
+    __screenObject.getWorldPosition(__screenWorldPosition);
+    __screenObject.getWorldQuaternion(__screenWorldQuaternion);
+
+    __screenForward.set(0, 0, 1).applyQuaternion(__screenWorldQuaternion).normalize();
+    __screenToCamera.copy(camera.position).sub(__screenWorldPosition).normalize();
+
+    const facingDot = __screenForward.dot(__screenToCamera);
+    const shouldShowScreen = facingDot > 0.18;
+
+    __screenObject.visible = shouldShowScreen;
+    __screenObject.element.style.pointerEvents = shouldShowScreen ? 'auto' : 'none';
 }
  
 // ============================================
@@ -852,15 +880,34 @@ function autoFitCamera(object) {
     box.getCenter(center);
     
     const maxDim = Math.max(size.x, size.y, size.z);
-    const cameraDistance = getCameraFitDistance(maxDim * 0.5, 2.5);
-    
-    camera.position.set(
-        center.x + maxDim * 0.5,
-        center.y + maxDim * 0.3,
-        center.z + cameraDistance
-    );
-    
-    controls.target.copy(center);
+    const isMobile = isMobileLayout();
+    const distancePadding = isMobile ? MOBILE_CAMERA_COMPOSITION.distancePadding : 2.5;
+    const cameraDistance = getCameraFitDistance(maxDim * 0.5, distancePadding);
+
+    if (isMobile) {
+        const mobileTarget = center.clone().add(new THREE.Vector3(
+            MOBILE_CAMERA_COMPOSITION.targetOffset.x,
+            MOBILE_CAMERA_COMPOSITION.targetOffset.y,
+            MOBILE_CAMERA_COMPOSITION.targetOffset.z
+        ));
+
+        camera.position.set(
+            center.x + maxDim * MOBILE_CAMERA_COMPOSITION.positionOffsetFactor.x,
+            center.y + maxDim * MOBILE_CAMERA_COMPOSITION.positionOffsetFactor.y,
+            center.z + cameraDistance * MOBILE_CAMERA_COMPOSITION.positionOffsetFactor.z
+        );
+
+        controls.target.copy(mobileTarget);
+    } else {
+        camera.position.set(
+            center.x + maxDim * 0.5,
+            center.y + maxDim * 0.3,
+            center.z + cameraDistance
+        );
+
+        controls.target.copy(center);
+    }
+
     controls.update();
 }
  
@@ -949,6 +996,7 @@ function createScreen() {
     screenWrap.appendChild(loadingHint);
 
     const screenObject = new CSS3DObject(screenWrap);
+    __screenObject = screenObject;
     updateResponsiveScreenTransform(screenObject);
     screenObject.element.style.backfaceVisibility = 'hidden';
     
@@ -1076,6 +1124,7 @@ function animate() {
 
     controls.update();
     updateEarthCoreEnvironment();
+    updateScreenFacingVisibility();
 
     renderer.render(scene, camera);
     cssRenderer.render(cssScene, camera);

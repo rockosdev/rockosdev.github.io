@@ -38,6 +38,13 @@ let penguinFlagHeightOffset = 0;
 let penguinBeamGapOffset = 0;
 let penguinFloatingTextSprite = null;
 let penguinFloatingTextHeightOffset = 0;
+let __loadedModel = null;
+let __sceneFocusTarget = new THREE.Vector3();
+let __sceneFitRadius = 0;
+
+function isMobileLayout() {
+    return window.innerWidth <= 900 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
 
 function createPenguinFlagTexture(textureLoader) {
     const canvas = document.createElement('canvas');
@@ -174,8 +181,7 @@ function moveCameraBackToFitRadius(targetCenter, fitRadius, padding = 1.15) {
     }
     direction.normalize();
 
-    const fov = THREE.MathUtils.degToRad(camera.fov);
-    const fitDistance = (fitRadius / Math.tan(fov / 2)) * padding;
+    const fitDistance = getCameraFitDistance(fitRadius, padding);
 
     camera.position.copy(targetCenter).add(direction.multiplyScalar(fitDistance));
     controls.target.copy(targetCenter);
@@ -183,8 +189,43 @@ function moveCameraBackToFitRadius(targetCenter, fitRadius, padding = 1.15) {
     controls.update();
 }
 
+function getCameraFitDistance(fitRadius, padding = 1) {
+    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
+    const limitingFov = Math.min(verticalFov, horizontalFov);
+    return (fitRadius / Math.tan(limitingFov / 2)) * padding;
+}
+
+function applyResponsiveCameraFit() {
+    if (__sceneFitRadius <= 0) return;
+
+    moveCameraBackToFitRadius(__sceneFocusTarget.clone(), __sceneFitRadius, 1.2);
+}
+
 // 与电脑屏幕保持一致的 X 轴倾角。
 const SCREEN_ROT_X = -0.37;
+
+// 电脑屏幕默认变换（桌面端基准值）
+const SCREEN_BASE_TRANSFORM = {
+    position: { x: 0.00, y: 52.00, z: -8.00 },
+    scale: { x: 0.125, y: 0.112, z: 0.20 }
+};
+
+function updateResponsiveScreenTransform(screenObject) {
+    if (!screenObject) return;
+
+    screenObject.rotation.x = SCREEN_ROT_X;
+    screenObject.position.set(
+        SCREEN_BASE_TRANSFORM.position.x,
+        SCREEN_BASE_TRANSFORM.position.y,
+        SCREEN_BASE_TRANSFORM.position.z
+    );
+    screenObject.scale.set(
+        SCREEN_BASE_TRANSFORM.scale.x,
+        SCREEN_BASE_TRANSFORM.scale.y,
+        SCREEN_BASE_TRANSFORM.scale.z
+    );
+}
  
 // ============================================
 // 第 1 步：获取容器
@@ -323,6 +364,7 @@ loader.load(
     modelPath,
     function (gltf) {
         const model = gltf.scene;
+        __loadedModel = model;
         
         // 修复材质
         model.traverse((child) => {
@@ -347,8 +389,8 @@ loader.load(
         autoFitCamera(model);
         // 记录“刚进入电脑时”的视角（用于 U 键恢复）
         // 必须在 autoFitCamera + controls.target 更新之后保存，避免误记录默认视角。
-        __saveInitialViewStateOnce();
         scene.add(model);
+        __saveInitialViewStateOnce();
 
         // 创建地心环境、轨道与企鹅。
         createEarthCoreEnvironment(model);
@@ -479,7 +521,13 @@ function createEarthCoreEnvironment(model) {
     earthCoreGroup.add(coolRimLight);
 
     const sceneFitRadius = orbitRadius + orbitTrackWidth * 0.5;
-    moveCameraBackToFitRadius(center, sceneFitRadius, 1.2);
+    __sceneFocusTarget.copy(center);
+    __sceneFitRadius = sceneFitRadius;
+
+    // 桌面端保留“经纬网总览”构图；移动端优先保持电脑位于屏幕中央。
+    if (!isMobileLayout()) {
+        applyResponsiveCameraFit();
+    }
 
     createOrbitRingAndPenguin(center, baseRadius);
 
@@ -804,8 +852,7 @@ function autoFitCamera(object) {
     box.getCenter(center);
     
     const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = camera.fov * (Math.PI / 180);
-    const cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 2.5;
+    const cameraDistance = getCameraFitDistance(maxDim * 0.5, 2.5);
     
     camera.position.set(
         center.x + maxDim * 0.5,
@@ -902,9 +949,7 @@ function createScreen() {
     screenWrap.appendChild(loadingHint);
 
     const screenObject = new CSS3DObject(screenWrap);
-    screenObject.position.set(0.00, 52.00, -8.00);
-    screenObject.rotation.x = SCREEN_ROT_X;
-    screenObject.scale.set(0.125, 0.112, 0.20);
+    updateResponsiveScreenTransform(screenObject);
     screenObject.element.style.backfaceVisibility = 'hidden';
     
     cssScene.add(screenObject);
@@ -1048,6 +1093,17 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(newWidth, newHeight);
     cssRenderer.setSize(newWidth, newHeight);
+
+    // 移动端地址栏/工具栏变化会频繁触发 resize，避免把镜头重新拉成经纬网总览。
+    if (!isMobileLayout()) {
+        applyResponsiveCameraFit();
+    }
+
+    cssScene.traverse((object) => {
+        if (object instanceof CSS3DObject) {
+            updateResponsiveScreenTransform(object);
+        }
+    });
 });
  
 console.log('3d-computer initialized');
