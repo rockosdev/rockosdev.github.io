@@ -55,9 +55,14 @@ const __screenToCamera = new THREE.Vector3();
 
 const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
     direction: new THREE.Vector3(0, 0.08, 1),
-    padding: 3.72,
-    targetNdc: new THREE.Vector2(-4, 0),
+    padding: 1.72,
+    targetNdc: new THREE.Vector2(0, 0),
     enableScreenSpaceCompensation: true
+};
+
+const MOBILE_OVERVIEW_INTERACTION_OFFSET = {
+    screenX: -0.5,
+    screenY: 0.5
 };
 
 function isMobileLayout() {
@@ -253,6 +258,7 @@ function applyResponsiveCameraFit() {
         if (MOBILE_OVERVIEW_CAMERA_COMPOSITION.enableScreenSpaceCompensation) {
             applyMobileScreenSpaceCompensation();
         }
+        applyMobileOverviewInteractionOffset();
         return;
     }
 
@@ -282,18 +288,26 @@ function rebuildMobileOverviewState(modelBounds, shellRadius, orbitVerticalReach
     const mobileSphere = new THREE.Sphere();
     mobileOverviewBounds.getBoundingSphere(mobileSphere);
     __mobileSceneFocusTarget.copy(mobileSphere.center);
-    __mobileSceneFocusTarget.y += shellRadius * 0.14;
     __mobileSceneFitRadius = mobileSphere.radius;
 
+    const boundsMin = mobileOverviewBounds.min.clone();
+    const boundsMax = mobileOverviewBounds.max.clone();
+    const boundsCenter = mobileOverviewBounds.getCenter(new THREE.Vector3());
+
     __mobileOverviewSamplePoints = [
-        __mobileSceneFocusTarget.clone(),
+        boundsCenter.clone(),
+        new THREE.Vector3(boundsMin.x, boundsMin.y, boundsMin.z),
+        new THREE.Vector3(boundsMin.x, boundsMin.y, boundsMax.z),
+        new THREE.Vector3(boundsMin.x, boundsMax.y, boundsMin.z),
+        new THREE.Vector3(boundsMin.x, boundsMax.y, boundsMax.z),
+        new THREE.Vector3(boundsMax.x, boundsMin.y, boundsMin.z),
+        new THREE.Vector3(boundsMax.x, boundsMin.y, boundsMax.z),
+        new THREE.Vector3(boundsMax.x, boundsMax.y, boundsMin.z),
+        new THREE.Vector3(boundsMax.x, boundsMax.y, boundsMax.z),
         new THREE.Vector3(__sceneFocusTarget.x, __sceneFocusTarget.y + shellRadius, __sceneFocusTarget.z),
-        new THREE.Vector3(__sceneFocusTarget.x, __sceneFocusTarget.y - shellRadius * 0.55, __sceneFocusTarget.z),
-        new THREE.Vector3(orbitCenter.x + orbitRadius, orbitCenter.y + orbitVerticalReach, orbitCenter.z),
-        new THREE.Vector3(orbitCenter.x - orbitRadius, orbitCenter.y + orbitVerticalReach, orbitCenter.z),
-        new THREE.Vector3(orbitCenter.x, orbitCenter.y + orbitVerticalReach, orbitCenter.z + orbitRadius),
-        new THREE.Vector3(orbitCenter.x, orbitCenter.y + orbitVerticalReach, orbitCenter.z - orbitRadius),
+        new THREE.Vector3(__sceneFocusTarget.x, __sceneFocusTarget.y - shellRadius, __sceneFocusTarget.z),
         modelBounds.getCenter(new THREE.Vector3()),
+        modelBounds.min.clone(),
         modelBounds.max.clone()
     ];
 
@@ -347,6 +361,30 @@ function applyMobileScreenSpaceCompensation() {
         camera.updateProjectionMatrix();
         controls.update();
     }
+}
+
+function applyMobileOverviewInteractionOffset() {
+    if (!isMobileLayout()) return;
+
+    const { screenX = 0, screenY = 0 } = MOBILE_OVERVIEW_INTERACTION_OFFSET;
+    if (screenX === 0 && screenY === 0) return;
+
+    const distanceToTarget = camera.position.distanceTo(controls.target);
+    const visibleHeight = 2 * distanceToTarget * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+    const visibleWidth = visibleHeight * camera.aspect;
+
+    const forward = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+    const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+
+    const offset = new THREE.Vector3()
+        .add(right.multiplyScalar(visibleWidth * screenX))
+        .add(up.multiplyScalar(visibleHeight * screenY));
+
+    camera.position.add(offset);
+    controls.target.add(offset);
+    camera.updateProjectionMatrix();
+    controls.update();
 }
 
 // 与电脑屏幕保持一致的 X 轴倾角。
