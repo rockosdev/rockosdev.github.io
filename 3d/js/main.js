@@ -38,46 +38,6 @@ let penguinFlagHeightOffset = 0;
 let penguinBeamGapOffset = 0;
 let penguinFloatingTextSprite = null;
 let penguinFloatingTextHeightOffset = 0;
-let __loadedModel = null;
-let __sceneFocusTarget = new THREE.Vector3();
-let __sceneFitRadius = 0;
-
-function getViewportSize() {
-    const docEl = document.documentElement;
-    const visualViewport = window.visualViewport;
-    const width = Math.round(visualViewport?.width || window.innerWidth || docEl.clientWidth || 0);
-    const height = Math.round(visualViewport?.height || window.innerHeight || docEl.clientHeight || 0);
-    return {
-        width: Math.max(1, width),
-        height: Math.max(1, height)
-    };
-}
-
-function syncContainerViewportSize() {
-    if (!container) return getViewportSize();
-    const viewport = getViewportSize();
-    container.style.width = `${viewport.width}px`;
-    container.style.height = `${viewport.height}px`;
-    return viewport;
-}
-
-function syncRendererLayout(viewport) {
-    const targetViewport = viewport || syncContainerViewportSize();
-    const { width, height } = targetViewport;
-
-    renderer.setSize(width, height, false);
-    renderer.domElement.style.width = `${width}px`;
-    renderer.domElement.style.height = `${height}px`;
-    renderer.domElement.style.position = 'fixed';
-    renderer.domElement.style.inset = '0';
-
-    cssRenderer.setSize(width, height);
-    cssRenderer.domElement.style.width = `${width}px`;
-    cssRenderer.domElement.style.height = `${height}px`;
-    cssRenderer.domElement.style.position = 'fixed';
-    cssRenderer.domElement.style.inset = '0';
-    cssRenderer.domElement.style.pointerEvents = 'none';
-}
 
 function createPenguinFlagTexture(textureLoader) {
     const canvas = document.createElement('canvas');
@@ -214,7 +174,8 @@ function moveCameraBackToFitRadius(targetCenter, fitRadius, padding = 1.15) {
     }
     direction.normalize();
 
-    const fitDistance = getCameraFitDistance(fitRadius, padding);
+    const fov = THREE.MathUtils.degToRad(camera.fov);
+    const fitDistance = (fitRadius / Math.tan(fov / 2)) * padding;
 
     camera.position.copy(targetCenter).add(direction.multiplyScalar(fitDistance));
     controls.target.copy(targetCenter);
@@ -222,72 +183,8 @@ function moveCameraBackToFitRadius(targetCenter, fitRadius, padding = 1.15) {
     controls.update();
 }
 
-function getCameraFitDistance(fitRadius, padding = 1) {
-    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
-    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
-    const limitingFov = Math.min(verticalFov, horizontalFov);
-    return (fitRadius / Math.tan(limitingFov / 2)) * padding;
-}
-
-function applyResponsiveCameraFit() {
-    if (__sceneFitRadius <= 0) return;
-
-    const targetCenter = __sceneFocusTarget.clone();
-    const isMobile = window.innerWidth <= 768;
-    const isPortrait = window.innerHeight > window.innerWidth;
-    const padding = isMobile ? (isPortrait ? 1.45 : 1.28) : 1.2;
-
-    if (isMobile) {
-        targetCenter.y += __sceneFitRadius * (isPortrait ? 0.16 : 0.08);
-    }
-
-    moveCameraBackToFitRadius(targetCenter, __sceneFitRadius, padding);
-}
-
 // 与电脑屏幕保持一致的 X 轴倾角。
 const SCREEN_ROT_X = -0.37;
-
-// 电脑屏幕默认变换（桌面端基准值）
-const SCREEN_BASE_TRANSFORM = {
-    position: { x: 0.00, y: 52.00, z: -8.00 },
-    scale: { x: 0.125, y: 0.112, z: 0.20 }
-};
-
-function updateResponsiveScreenTransform(screenObject) {
-    if (!screenObject) return;
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const isMobile = vw <= 768;
-    const isSmallMobile = vw <= 480;
-    const aspect = vw / Math.max(vh, 1);
-
-    screenObject.rotation.x = SCREEN_ROT_X;
-
-    if (!isMobile) {
-        screenObject.position.set(
-            SCREEN_BASE_TRANSFORM.position.x,
-            SCREEN_BASE_TRANSFORM.position.y,
-            SCREEN_BASE_TRANSFORM.position.z
-        );
-        screenObject.scale.set(
-            SCREEN_BASE_TRANSFORM.scale.x,
-            SCREEN_BASE_TRANSFORM.scale.y,
-            SCREEN_BASE_TRANSFORM.scale.z
-        );
-        return;
-    }
-
-    // 手机上屏幕内容更容易因为长宽比变化显得偏左下，
-    // 这里针对窄屏提高位置并略微缩小，让 CSS3D 内容更贴合电脑屏幕区域。
-    const yOffset = isSmallMobile ? 66 : 61;
-    const zOffset = isSmallMobile ? -5.5 : -6.2;
-    const xOffset = aspect < 0.58 ? 1.8 : 1.1;
-    const uniformScale = isSmallMobile ? 0.082 : 0.094;
-
-    screenObject.position.set(xOffset, yOffset, zOffset);
-    screenObject.scale.set(uniformScale, uniformScale * 0.9, uniformScale * 1.6);
-}
  
 // ============================================
 // 第 1 步：获取容器
@@ -354,9 +251,8 @@ const cssScene = new THREE.Scene();
 // ============================================
 // 第 3 步：创建相机（Camera）
 // ============================================
-const initialViewport = syncContainerViewportSize();
-const width = initialViewport.width;
-const height = initialViewport.height;
+const width = window.innerWidth;
+const height = window.innerHeight;
  
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -377,7 +273,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(width, height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.domElement.style.position = 'fixed';
+renderer.domElement.style.position = 'absolute';
 renderer.domElement.style.top = '0';
 renderer.domElement.style.left = '0';
 renderer.domElement.style.zIndex = '1';
@@ -386,12 +282,11 @@ container.appendChild(renderer.domElement);
 // 4.2 CSS3D 渲染器
 const cssRenderer = new CSS3DRenderer();
 cssRenderer.setSize(width, height);
-cssRenderer.domElement.style.position = 'fixed';
+cssRenderer.domElement.style.position = 'absolute';
 cssRenderer.domElement.style.top = '0';
 cssRenderer.domElement.style.left = '0';
 cssRenderer.domElement.style.zIndex = '2';
 container.appendChild(cssRenderer.domElement);
-syncRendererLayout(initialViewport);
  
 // ============================================
 // 第 4.5 步：添加灯光
@@ -428,7 +323,6 @@ loader.load(
     modelPath,
     function (gltf) {
         const model = gltf.scene;
-        __loadedModel = model;
         
         // 修复材质
         model.traverse((child) => {
@@ -453,6 +347,7 @@ loader.load(
         autoFitCamera(model);
         // 记录“刚进入电脑时”的视角（用于 U 键恢复）
         // 必须在 autoFitCamera + controls.target 更新之后保存，避免误记录默认视角。
+        __saveInitialViewStateOnce();
         scene.add(model);
 
         // 创建地心环境、轨道与企鹅。
@@ -468,7 +363,6 @@ loader.load(
         // 现在：不直接让用户“瞬间进入”，而是提示“点击进入”后再淡出相册 overlay。
         const legacyLoading = document.getElementById('loading');
         if (legacyLoading) legacyLoading.style.display = 'none';
-        __saveInitialViewStateOnce();
         __markAlbumReadyToEnter();
     },
     function (progress) {
@@ -585,9 +479,7 @@ function createEarthCoreEnvironment(model) {
     earthCoreGroup.add(coolRimLight);
 
     const sceneFitRadius = orbitRadius + orbitTrackWidth * 0.5;
-    __sceneFocusTarget.copy(center);
-    __sceneFitRadius = sceneFitRadius;
-    applyResponsiveCameraFit();
+    moveCameraBackToFitRadius(center, sceneFitRadius, 1.2);
 
     createOrbitRingAndPenguin(center, baseRadius);
 
@@ -912,7 +804,8 @@ function autoFitCamera(object) {
     box.getCenter(center);
     
     const maxDim = Math.max(size.x, size.y, size.z);
-    const cameraDistance = getCameraFitDistance(maxDim * 0.5, 2.5);
+    const fov = camera.fov * (Math.PI / 180);
+    const cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 2.5;
     
     camera.position.set(
         center.x + maxDim * 0.5,
@@ -1009,9 +902,10 @@ function createScreen() {
     screenWrap.appendChild(loadingHint);
 
     const screenObject = new CSS3DObject(screenWrap);
-    updateResponsiveScreenTransform(screenObject);
+    screenObject.position.set(0.00, 52.00, -8.00);
+    screenObject.rotation.x = SCREEN_ROT_X;
+    screenObject.scale.set(0.125, 0.112, 0.20);
     screenObject.element.style.backfaceVisibility = 'hidden';
-    screenObject.element.style.pointerEvents = 'auto';
     
     cssScene.add(screenObject);
     
@@ -1148,35 +1042,13 @@ animate();
 // 第 11 步：响应窗口大小变化
 // ============================================
 window.addEventListener('resize', () => {
-    const { width: newWidth, height: newHeight } = syncContainerViewportSize();
+    const newWidth = window.innerWidth;
+    const newHeight = window.innerHeight;
     camera.aspect = newWidth / newHeight;
     camera.updateProjectionMatrix();
-    syncRendererLayout({ width: newWidth, height: newHeight });
-
-    applyResponsiveCameraFit();
-
-    cssScene.traverse((object) => {
-        if (object instanceof CSS3DObject) {
-            updateResponsiveScreenTransform(object);
-        }
-    });
+    renderer.setSize(newWidth, newHeight);
+    cssRenderer.setSize(newWidth, newHeight);
 });
-
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-        const { width: newWidth, height: newHeight } = syncContainerViewportSize();
-        camera.aspect = newWidth / newHeight;
-        camera.updateProjectionMatrix();
-        syncRendererLayout({ width: newWidth, height: newHeight });
-        applyResponsiveCameraFit();
-
-        cssScene.traverse((object) => {
-            if (object instanceof CSS3DObject) {
-                updateResponsiveScreenTransform(object);
-            }
-        });
-    });
-}
  
 console.log('3d-computer initialized');
 console.log('这网页能处，有事它真加载');
