@@ -323,13 +323,14 @@ tags:               [blog]                           # 文章标签（可多个,
 如果我们需要在体现层级目录，基于Chirpy主题，框架为Jekyll的博客渲染不一样。比如平素我们写一级目录是 `# 第五步：开启giscus评论区`对吧， 但是经过该主题博客渲染后， 我们访问的并不能识别为一级目录， 而正确的做法是再增加一个`#`， 即`## 第五步：开启giscus评论区`这样才是一级目录， 其他级别同理， 多加一个`#`即可。
 
 还有一个要注意的是，如果要我们的一篇博文中包含另一篇博文， 最经典的是情况是我们要写一篇关于目录的博文， 这需要包含其他博文的链接。这就需要两种方法：一种是把方案是把经过渲染可以公共访问的链接附上；另一种是在博客相对层级中引用。个人测试后者比较快。
-```txt
-# 第一种粘贴发布文章后的链接：比如本文发布的链接是`https://i.cnblogs.com/articles/edit;postId=19631769`， 作为目录应该这样写
+
+```md
+# 第一种粘贴发布文章后的链接：比如本文发布的网上可以公开访问的链接是`https://i.cnblogs.com/articles/edit;postId=19631769`， 作为目录应该这样写
 [基于Jekyll的静态GitHub博客搭建](https://i.cnblogs.com/articles/edit;postId=19631769)
 
 # 第二种博客相对层级别目录中引用, 都需要从博客根目录下开始。
 # （1）如果在网络静态资源目录（assets）下，假设文章是assets/cpp/2026-03-21-introduce-jekyll.md, 那链接就是如下：
 [基于Jekyll的静态GitHub博客搭建](assets/cpp/2026-03-21-introduce-jekyll.md)
 # （2）但是网络静态资源目录是存放照片的，不适合放文章， 而我们的专门放文章的地方是`_posts`下， 假设文章是`_posts/blog/2026-02-24-jekyll-guide00.md`, 那链接就是：
-[基于Jekyll的静态GitHub博客搭建]({% link _posts/blog/2026-02-24-jekyll-guide00.md %})
+`[基于Jekyll的静态GitHub博客搭建]({% link _posts/blog/2026-02-24-jekyll-guide00.md %})`
 ```
