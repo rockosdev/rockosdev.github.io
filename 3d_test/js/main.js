@@ -61,9 +61,9 @@ const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
 };
 
 const DESKTOP_OVERVIEW_CAMERA_COMPOSITION = {
-  direction: new THREE.Vector3(0, 0.12, 1),
-  padding: 1.28,
-  focusOffset: new THREE.Vector3(0, -220, 0)
+  direction: new THREE.Vector3(0, 0.2, 1),
+  padding: 1.24,
+  focusOffset: new THREE.Vector3(0, 180, 0)
 };
 
 function isMobileLayout() {
