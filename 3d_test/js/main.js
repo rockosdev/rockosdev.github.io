@@ -40,6 +40,7 @@ let penguinFloatingTextSprite = null;
 let penguinFloatingTextHeightOffset = 0;
 let __loadedModel = null;
 let __sceneFocusTarget = new THREE.Vector3();
+let __mobileSceneFocusTarget = new THREE.Vector3();
 let __sceneFitRadius = 0;
 let __screenObject = null;
 let __desktopInitialViewCaptured = false;
@@ -61,6 +62,17 @@ function isMobileLayout() {
 
 function getCurrentViewStateKey() {
     return isMobileLayout() ? 'mobile' : 'desktop';
+}
+
+function updateResponsiveControlsBehavior() {
+    if (isMobileLayout()) {
+        controls.enablePan = false;
+        controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+        return;
+    }
+
+    controls.enablePan = true;
+    controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
 }
 
 function createPenguinFlagTexture(textureLoader) {
@@ -216,7 +228,9 @@ function getCameraFitDistance(fitRadius, padding = 1) {
 function applyResponsiveCameraFit() {
     if (__sceneFitRadius <= 0) return;
 
-    const targetCenter = __sceneFocusTarget.clone();
+    const targetCenter = isMobileLayout()
+        ? __mobileSceneFocusTarget.clone()
+        : __sceneFocusTarget.clone();
 
     if (isMobileLayout()) {
         const direction = MOBILE_OVERVIEW_CAMERA_COMPOSITION.direction.clone().normalize();
@@ -399,6 +413,7 @@ scene.add(bottomLight);
 const controls = new OrbitControls(camera, cssRenderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
+updateResponsiveControlsBehavior();
  
 // ============================================
 // 第 6 步：加载 3D 模型
@@ -574,6 +589,29 @@ function createEarthCoreEnvironment(model) {
 
     const sceneFitRadius = orbitRadius + orbitTrackWidth * 0.5;
     __sceneFocusTarget.copy(center);
+    __mobileSceneFocusTarget.set(center.x, (center.y + orbitCenter.y) * 0.5, center.z);
+
+    const mobileOverviewBounds = new THREE.Box3();
+    const mobileSphereMin = center.clone().addScalar(-shellRadius);
+    const mobileSphereMax = center.clone().addScalar(shellRadius);
+    mobileOverviewBounds.expandByPoint(mobileSphereMin);
+    mobileOverviewBounds.expandByPoint(mobileSphereMax);
+
+    const orbitVerticalReach = Math.max(baseRadius * 0.22 * 1.45 + 8, baseRadius * 0.5);
+    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
+        orbitCenter.x - orbitRadius,
+        orbitCenter.y - orbitVerticalReach,
+        orbitCenter.z - orbitRadius
+    ));
+    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
+        orbitCenter.x + orbitRadius,
+        orbitCenter.y + orbitVerticalReach,
+        orbitCenter.z + orbitRadius
+    ));
+    mobileOverviewBounds.expandByPoint(box.min);
+    mobileOverviewBounds.expandByPoint(box.max);
+    mobileOverviewBounds.getCenter(__mobileSceneFocusTarget);
+
     __sceneFitRadius = sceneFitRadius;
 
     // 桌面端与移动端都先进入“经纬网球 + 轨道 + 电脑”的总览构图。
@@ -1146,6 +1184,8 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(newWidth, newHeight);
     cssRenderer.setSize(newWidth, newHeight);
+
+    updateResponsiveControlsBehavior();
 
     // 移动端在 resize 时重新套用总览构图，桌面端不强制改动当前相机位置。
     if (isMobileLayout()) {
