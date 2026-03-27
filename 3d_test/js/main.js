@@ -55,9 +55,9 @@ const __screenToCamera = new THREE.Vector3();
 
 const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
   direction: new THREE.Vector3(0, 0.08, 1),
-  padding: 1.72,
+  padding: 1.95,
   targetNdc: new THREE.Vector2(0, 0),
-  enableScreenSpaceCompensation: true
+  enableScreenSpaceCompensation: false
 };
 
 function isMobileLayout() {
@@ -281,7 +281,7 @@ function rebuildMobileOverviewState(modelBounds, shellRadius, orbitVerticalReach
 
   const mobileSphere = new THREE.Sphere();
   mobileOverviewBounds.getBoundingSphere(mobileSphere);
-  __mobileSceneFocusTarget.copy(mobileSphere.center);
+  __mobileSceneFocusTarget.copy(__sceneFocusTarget);
   __mobileSceneFitRadius = mobileSphere.radius;
 
   const boundsMin = mobileOverviewBounds.min.clone();
