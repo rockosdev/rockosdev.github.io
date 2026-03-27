@@ -1,6 +1,6 @@
 // ============================================
 // 3D 可旋转电脑
-// 保留功能：加载相册、屏幕网页、V 播放视频、U 恢复视角、R 切换企鹅特效
+// 功能：加载相册、在电脑屏幕显示网页、按 V 切换视频、按 U 恢复目标视角、按 R 切换企鹅旗帜与粒子束特效
 // ============================================
  
 import * as THREE from 'three';
@@ -42,20 +42,25 @@ let __loadedModel = null;
 let __sceneFocusTarget = new THREE.Vector3();
 let __sceneFitRadius = 0;
 let __screenObject = null;
+let __desktopInitialViewCaptured = false;
+let __mobileInitialViewCaptured = false;
 
 const __screenWorldPosition = new THREE.Vector3();
 const __screenWorldQuaternion = new THREE.Quaternion();
 const __screenForward = new THREE.Vector3();
 const __screenToCamera = new THREE.Vector3();
 
-const MOBILE_CAMERA_COMPOSITION = {
-    targetOffset: { x: 0, y: 45, z: 0 },
-    positionOffsetFactor: { x: 0.12, y: 0.18, z: 1.18 },
-    distancePadding: 3.2
+const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
+    direction: new THREE.Vector3(0.08, 0.18, 1),
+    padding: 1.5
 };
 
 function isMobileLayout() {
     return window.innerWidth <= 900 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
+
+function getCurrentViewStateKey() {
+    return isMobileLayout() ? 'mobile' : 'desktop';
 }
 
 function createPenguinFlagTexture(textureLoader) {
@@ -211,7 +216,20 @@ function getCameraFitDistance(fitRadius, padding = 1) {
 function applyResponsiveCameraFit() {
     if (__sceneFitRadius <= 0) return;
 
-    moveCameraBackToFitRadius(__sceneFocusTarget.clone(), __sceneFitRadius, 1.2);
+    const targetCenter = __sceneFocusTarget.clone();
+
+    if (isMobileLayout()) {
+        const direction = MOBILE_OVERVIEW_CAMERA_COMPOSITION.direction.clone().normalize();
+        const fitDistance = getCameraFitDistance(__sceneFitRadius, MOBILE_OVERVIEW_CAMERA_COMPOSITION.padding);
+
+        camera.position.copy(targetCenter).add(direction.multiplyScalar(fitDistance));
+        controls.target.copy(targetCenter);
+        camera.updateProjectionMatrix();
+        controls.update();
+        return;
+    }
+
+    moveCameraBackToFitRadius(targetCenter, __sceneFitRadius, 1.2);
 }
 
 // 与电脑屏幕保持一致的 X 轴倾角。
@@ -415,13 +433,20 @@ loader.load(
         });
         
         autoFitCamera(model);
-        // 记录“刚进入电脑时”的视角（用于 U 键恢复）
-        // 必须在 autoFitCamera + controls.target 更新之后保存，避免误记录默认视角。
         scene.add(model);
-        __saveInitialViewStateOnce();
+
+        if (!__desktopInitialViewCaptured) {
+            __saveInitialViewState('desktop');
+            __desktopInitialViewCaptured = true;
+        }
 
         // 创建地心环境、轨道与企鹅。
         createEarthCoreEnvironment(model);
+
+        if (isMobileLayout() && !__mobileInitialViewCaptured) {
+            __saveInitialViewState('mobile');
+            __mobileInitialViewCaptured = true;
+        }
 
         // 创建屏幕网页
         createScreen();
@@ -429,8 +454,7 @@ loader.load(
         // 设置 R 键：切换企鹅旗帜与粒子特效。
         setupRKeyListener();
 
-        // 原逻辑：加载完成后隐藏 #loading。
-        // 现在：不直接让用户“瞬间进入”，而是提示“点击进入”后再淡出相册 overlay。
+        // 模型加载完成后隐藏旧版 #loading 节点，并将相册遮罩切换为“点击进入”状态。
         const legacyLoading = document.getElementById('loading');
         if (legacyLoading) legacyLoading.style.display = 'none';
         __markAlbumReadyToEnter();
@@ -552,10 +576,8 @@ function createEarthCoreEnvironment(model) {
     __sceneFocusTarget.copy(center);
     __sceneFitRadius = sceneFitRadius;
 
-    // 桌面端保留“经纬网总览”构图；移动端优先保持电脑位于屏幕中央。
-    if (!isMobileLayout()) {
-        applyResponsiveCameraFit();
-    }
+    // 桌面端与移动端都先进入“经纬网球 + 轨道 + 电脑”的总览构图。
+    applyResponsiveCameraFit();
 
     createOrbitRingAndPenguin(center, baseRadius);
 
@@ -880,33 +902,15 @@ function autoFitCamera(object) {
     box.getCenter(center);
     
     const maxDim = Math.max(size.x, size.y, size.z);
-    const isMobile = isMobileLayout();
-    const distancePadding = isMobile ? MOBILE_CAMERA_COMPOSITION.distancePadding : 2.5;
-    const cameraDistance = getCameraFitDistance(maxDim * 0.5, distancePadding);
+    const cameraDistance = getCameraFitDistance(maxDim * 0.5, 2.5);
 
-    if (isMobile) {
-        const mobileTarget = center.clone().add(new THREE.Vector3(
-            MOBILE_CAMERA_COMPOSITION.targetOffset.x,
-            MOBILE_CAMERA_COMPOSITION.targetOffset.y,
-            MOBILE_CAMERA_COMPOSITION.targetOffset.z
-        ));
+    camera.position.set(
+        center.x + maxDim * 0.5,
+        center.y + maxDim * 0.3,
+        center.z + cameraDistance
+    );
 
-        camera.position.set(
-            center.x + maxDim * MOBILE_CAMERA_COMPOSITION.positionOffsetFactor.x,
-            center.y + maxDim * MOBILE_CAMERA_COMPOSITION.positionOffsetFactor.y,
-            center.z + cameraDistance * MOBILE_CAMERA_COMPOSITION.positionOffsetFactor.z
-        );
-
-        controls.target.copy(mobileTarget);
-    } else {
-        camera.position.set(
-            center.x + maxDim * 0.5,
-            center.y + maxDim * 0.3,
-            center.z + cameraDistance
-        );
-
-        controls.target.copy(center);
-    }
+    controls.target.copy(center);
 
     controls.update();
 }
@@ -922,7 +926,7 @@ directionalLight.position.set(10, 10, 10);
 scene.add(directionalLight);
  
 // ============================================
-// 第 7.3 步：添加辅助线（保留！）
+// 第 7.3 步：添加网格辅助线与坐标轴辅助线
 // ============================================
 const gridHelper = new THREE.GridHelper(10000, 100);
 scene.add(gridHelper);
@@ -1143,8 +1147,8 @@ window.addEventListener('resize', () => {
     renderer.setSize(newWidth, newHeight);
     cssRenderer.setSize(newWidth, newHeight);
 
-    // 移动端地址栏/工具栏变化会频繁触发 resize，避免把镜头重新拉成经纬网总览。
-    if (!isMobileLayout()) {
+    // 移动端在 resize 时重新套用总览构图，桌面端不强制改动当前相机位置。
+    if (isMobileLayout()) {
         applyResponsiveCameraFit();
     }
 
@@ -1159,39 +1163,54 @@ console.log('3d-computer initialized');
 console.log('这网页能处，有事它真加载');
 
 // ============================================
-// U 键恢复初始视角
-// 还原 camera.position、controls.target 和 camera.zoom
+// U 键恢复目标视角
+// 桌面端恢复到电脑前方视角，移动端恢复到移动端总览视角
 // ============================================
 
 const __initialViewState = {
-    saved: false,
-    cameraPosition: new THREE.Vector3(),
-    controlsTarget: new THREE.Vector3(),
-    cameraZoom: 1
+    desktop: {
+        saved: false,
+        cameraPosition: new THREE.Vector3(),
+        controlsTarget: new THREE.Vector3(),
+        cameraZoom: 1
+    },
+    mobile: {
+        saved: false,
+        cameraPosition: new THREE.Vector3(),
+        controlsTarget: new THREE.Vector3(),
+        cameraZoom: 1
+    }
 };
 
-function __saveInitialViewStateOnce() {
-    if (__initialViewState.saved) return;
-    __initialViewState.cameraPosition.copy(camera.position);
-    __initialViewState.controlsTarget.copy(controls.target);
-    __initialViewState.cameraZoom = camera.zoom;
-    __initialViewState.saved = true;
-    console.log('✅ 已记录初始视角（按 U 可恢复）');
+function __saveInitialViewState(viewKey = getCurrentViewStateKey()) {
+    const targetState = __initialViewState[viewKey];
+    if (!targetState || targetState.saved) return;
+
+    targetState.cameraPosition.copy(camera.position);
+    targetState.controlsTarget.copy(controls.target);
+    targetState.cameraZoom = camera.zoom;
+    targetState.saved = true;
+    console.log(`✅ 已记录 ${viewKey} 初始视角（按 U 可恢复）`);
 }
 
 function __restoreInitialViewState() {
-    if (!__initialViewState.saved) {
+    const viewKey = getCurrentViewStateKey();
+    const targetState = __initialViewState[viewKey];
+
+    if (!targetState || !targetState.saved) {
         console.warn('⚠️ 初始视角尚未记录，无法恢复');
         return;
     }
-    camera.position.copy(__initialViewState.cameraPosition);
-    controls.target.copy(__initialViewState.controlsTarget);
-    camera.zoom = __initialViewState.cameraZoom;
+
+    camera.position.copy(targetState.cameraPosition);
+    controls.target.copy(targetState.controlsTarget);
+    camera.zoom = targetState.cameraZoom;
     camera.updateProjectionMatrix();
     controls.update();
 }
 
-// 初始视角在模型完成自动对焦后立即记录，避免保存到默认机位。
+// 桌面端在自动对焦后先记录“电脑前方视角”，随后再切到总览；
+// 移动端记录的是移动端总览视角。
 
 // 监听 U 键
 window.addEventListener('keydown', (e) => {
