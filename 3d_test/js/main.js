@@ -54,9 +54,10 @@ const __screenForward = new THREE.Vector3();
 const __screenToCamera = new THREE.Vector3();
 
 const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
-    direction: new THREE.Vector3(-0.02, 0.14, 1),
+    direction: new THREE.Vector3(0, 0.08, 1),
     padding: 1.72,
-    targetNdc: new THREE.Vector2(0, 0.12)
+    targetNdc: new THREE.Vector2(0, 0),
+    enableScreenSpaceCompensation: false
 };
 
 function isMobileLayout() {
@@ -249,7 +250,9 @@ function applyResponsiveCameraFit() {
         controls.target.copy(targetCenter);
         camera.updateProjectionMatrix();
         controls.update();
-        applyMobileScreenSpaceCompensation();
+        if (MOBILE_OVERVIEW_CAMERA_COMPOSITION.enableScreenSpaceCompensation) {
+            applyMobileScreenSpaceCompensation();
+        }
         return;
     }
 
