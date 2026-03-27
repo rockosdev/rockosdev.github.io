@@ -57,7 +57,7 @@ const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
     direction: new THREE.Vector3(0, 0.08, 1),
     padding: 1.72,
     targetNdc: new THREE.Vector2(0, 0),
-    enableScreenSpaceCompensation: false
+    enableScreenSpaceCompensation: true
 };
 
 function isMobileLayout() {
