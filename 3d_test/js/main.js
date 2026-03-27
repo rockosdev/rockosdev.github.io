@@ -60,6 +60,12 @@ const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
   enableScreenSpaceCompensation: false
 };
 
+const DESKTOP_OVERVIEW_CAMERA_COMPOSITION = {
+  direction: new THREE.Vector3(0, 0.12, 1),
+  padding: 1.28,
+  focusOffset: new THREE.Vector3(0, -220, 0)
+};
+
 function isMobileLayout() {
   const ua = navigator.userAgent || '';
   const isMobileUA = /Android|iPhone|iPod|Mobile|BlackBerry|IEMobile|Opera Mini/i.test(ua);
@@ -256,7 +262,14 @@ function applyResponsiveCameraFit() {
     return;
   }
 
-  moveCameraBackToFitRadius(targetCenter, __sceneFitRadius, 1.2);
+  const desktopTargetCenter = targetCenter.clone().add(DESKTOP_OVERVIEW_CAMERA_COMPOSITION.focusOffset);
+  const desktopDirection = DESKTOP_OVERVIEW_CAMERA_COMPOSITION.direction.clone().normalize();
+  const desktopFitDistance = getCameraFitDistance(__sceneFitRadius, DESKTOP_OVERVIEW_CAMERA_COMPOSITION.padding);
+
+  camera.position.copy(desktopTargetCenter).add(desktopDirection.multiplyScalar(desktopFitDistance));
+  controls.target.copy(desktopTargetCenter);
+  camera.updateProjectionMatrix();
+  controls.update();
 }
 
 function rebuildMobileOverviewState(modelBounds, shellRadius, orbitVerticalReach) {
