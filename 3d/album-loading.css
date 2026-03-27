@@ -1,0 +1,225 @@
+/*
+  Album loading overlay styles (scoped)
+  说明：从 3d_photo_album/css/style.css 提取并做了作用域隔离，
+  只在 #album-loading 内生效，避免污染 3d-computer 其它 DOM。
+*/
+
+/* overlay 容器 */
+#album-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 999;
+  display: grid;
+  place-items: center;
+  background: #000;
+  color: #fff;
+}
+
+/* 用于淡出动画 */
+#album-loading.is-fading {
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+
+/* 相册本体（来自原 .box） */
+#album-loading .album-box {
+  width: 200px;
+  height: 200px;
+  position: relative;
+  -webkit-transform-style: preserve-3d;
+  -webkit-transform: rotateX(13deg);
+  -webkit-animation: albumMove 5s linear infinite;
+}
+
+/* 小立方体 */
+#album-loading .album-minbox {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  left: 50px;
+  top: 30px;
+  -webkit-transform-style: preserve-3d;
+}
+
+#album-loading li {
+  list-style: none;
+}
+
+#album-loading .album-minbox li {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-position: center center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+#album-loading .album-minbox li:nth-child(1) {
+  background-image: url(./assets/album/img/1.jpg);
+  -webkit-transform: translateZ(50px);
+}
+#album-loading .album-minbox li:nth-child(2) {
+  background-image: url(./assets/album/img/2.jpg);
+  -webkit-transform: rotateY(180deg) translateZ(50px);
+}
+#album-loading .album-minbox li:nth-child(3) {
+  background-image: url(./assets/album/img/3.jpg);
+  -webkit-transform: rotateX(-90deg) translateZ(50px);
+}
+#album-loading .album-minbox li:nth-child(4) {
+  background-image: url(./assets/album/img/4.jpg);
+  -webkit-transform: rotateX(90deg) translateZ(50px);
+}
+#album-loading .album-minbox li:nth-child(5) {
+  background-image: url(./assets/album/img/5.jpg);
+  -webkit-transform: rotateY(-90deg) translateZ(50px);
+}
+#album-loading .album-minbox li:nth-child(6) {
+  background-image: url(./assets/album/img/6.jpg);
+  -webkit-transform: rotateY(90deg) translateZ(50px);
+}
+
+/* 大立方体 */
+#album-loading .album-maxbox {
+  width: 800px;
+  height: 400px;
+  position: absolute;
+  left: 0;
+  top: -20px;
+  -webkit-transform-style: preserve-3d;
+}
+
+#album-loading .album-maxbox li {
+  width: 200px;
+  height: 200px;
+  background: #fff;
+  background-position: center center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  border: 1px solid #ccc;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0.2;
+  -webkit-transition: all 1s ease;
+}
+
+#album-loading .album-maxbox li:nth-child(1) {
+  background-image: url(./assets/album/img/1.jpg);
+  -webkit-transform: translateZ(100px);
+}
+#album-loading .album-maxbox li:nth-child(2) {
+  background-image: url(./assets/album/img/2.jpg);
+  -webkit-transform: rotateX(0deg) translateZ(-100px);
+}
+#album-loading .album-maxbox li:nth-child(3) {
+  background-image: url(./assets/album/img/3.jpg);
+  -webkit-transform: rotateX(-90deg) translateZ(100px);
+}
+#album-loading .album-maxbox li:nth-child(4) {
+  background-image: url(./assets/album/img/4.jpg);
+  -webkit-transform: rotateX(90deg) translateZ(100px);
+}
+#album-loading .album-maxbox li:nth-child(5) {
+  background-image: url(./assets/album/img/5.jpg);
+  -webkit-transform: rotateY(-90deg) translateZ(100px);
+}
+#album-loading .album-maxbox li:nth-child(6) {
+  background-image: url(./assets/album/img/6.jpg);
+  -webkit-transform: rotateY(90deg) translateZ(100px);
+}
+
+/* hover 展开（保留原效果：鼠标放上去会展开） */
+#album-loading .album-box:hover .album-maxbox li:nth-child(1) {
+  -webkit-transform: translateZ(300px);
+  width: 400px;
+  height: 400px;
+  opacity: 0.8;
+  left: -100px;
+  top: -100px;
+}
+#album-loading .album-box:hover .album-maxbox li:nth-child(2) {
+  -webkit-transform: rotateX(0deg) translateZ(-300px);
+  width: 400px;
+  height: 400px;
+  opacity: 0.8;
+  left: -100px;
+  top: -100px;
+}
+#album-loading .album-box:hover .album-maxbox li:nth-child(3) {
+  -webkit-transform: rotateX(-90deg) translateZ(300px);
+  width: 400px;
+  height: 400px;
+  opacity: 0.8;
+  left: -100px;
+  top: -100px;
+}
+#album-loading .album-box:hover .album-maxbox li:nth-child(4) {
+  -webkit-transform: rotateX(90deg) translateZ(300px);
+  width: 400px;
+  height: 400px;
+  opacity: 0.8;
+  left: -100px;
+  top: -100px;
+}
+#album-loading .album-box:hover .album-maxbox li:nth-child(5) {
+  -webkit-transform: rotateY(-90deg) translateZ(300px);
+  width: 400px;
+  height: 400px;
+  opacity: 0.8;
+  left: -100px;
+  top: -100px;
+}
+#album-loading .album-box:hover .album-maxbox li:nth-child(6) {
+  -webkit-transform: rotateY(90deg) translateZ(300px);
+  width: 400px;
+  height: 400px;
+  opacity: 0.8;
+  left: -100px;
+  top: -100px;
+}
+
+@keyframes albumMove {
+  0% {
+    -webkit-transform: rotateX(13deg) rotateY(0deg);
+  }
+  100% {
+    -webkit-transform: rotateX(13deg) rotateY(360deg);
+  }
+}
+
+/* 底部提示/按钮区域 */
+#album-loading .album-hud {
+  margin-top: 28px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+#album-loading #progress {
+  margin-top: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#album-loading #enter-btn {
+  display: none;
+  margin-top: 12px;
+  padding: 10px 18px;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+#album-loading #enter-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+#album-loading.is-ready #enter-btn {
+  display: inline-block;
+}
