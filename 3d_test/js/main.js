@@ -54,7 +54,7 @@ const __screenForward = new THREE.Vector3();
 const __screenToCamera = new THREE.Vector3();
 
 const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
-    direction: new THREE.Vector3(-2, 0.08, 1),
+    direction: new THREE.Vector3(-8, 8.08, 1),
     padding: 3.72,
     targetNdc: new THREE.Vector2(0, 0),
     enableScreenSpaceCompensation: true
