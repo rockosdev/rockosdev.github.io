@@ -320,8 +320,8 @@ tags:               [blog]                           # 文章标签（可多个,
 目录的示例如下：
 ```md
 {% raw %}
-`[0.1 本教程介绍]({% link _posts/cpp/2026-03-17-introduction-to-these-tutorials0001.md %})`
-`[0.2 程序和编程语言介绍]({% link _posts/cpp/2026-03-19-introduction-to-programming-languages0002.md %})`
+[0.1 本教程介绍]({% link _posts/cpp/2026-03-17-introduction-to-these-tutorials0001.md %})
+[0.2 程序和编程语言介绍]({% link _posts/cpp/2026-03-19-introduction-to-programming-languages0002.md %})
 {% endraw %}
 ```
 如果我们需要在体现层级目录，基于Chirpy主题，框架为Jekyll的博客渲染不一样。比如平素我们写一级目录是 `# 第五步：开启giscus评论区`对吧， 但是经过该主题博客渲染后， 我们访问的并不能识别为一级目录， 而正确的做法是再增加一个`#`， 即`## 第五步：开启giscus评论区`这样才是一级目录， 其他级别同理， 多加一个`#`即可。
