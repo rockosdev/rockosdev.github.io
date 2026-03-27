@@ -42,6 +42,43 @@ let __loadedModel = null;
 let __sceneFocusTarget = new THREE.Vector3();
 let __sceneFitRadius = 0;
 
+function getViewportSize() {
+    const docEl = document.documentElement;
+    const visualViewport = window.visualViewport;
+    const width = Math.round(visualViewport?.width || window.innerWidth || docEl.clientWidth || 0);
+    const height = Math.round(visualViewport?.height || window.innerHeight || docEl.clientHeight || 0);
+    return {
+        width: Math.max(1, width),
+        height: Math.max(1, height)
+    };
+}
+
+function syncContainerViewportSize() {
+    if (!container) return getViewportSize();
+    const viewport = getViewportSize();
+    container.style.width = `${viewport.width}px`;
+    container.style.height = `${viewport.height}px`;
+    return viewport;
+}
+
+function syncRendererLayout(viewport) {
+    const targetViewport = viewport || syncContainerViewportSize();
+    const { width, height } = targetViewport;
+
+    renderer.setSize(width, height, false);
+    renderer.domElement.style.width = `${width}px`;
+    renderer.domElement.style.height = `${height}px`;
+    renderer.domElement.style.position = 'fixed';
+    renderer.domElement.style.inset = '0';
+
+    cssRenderer.setSize(width, height);
+    cssRenderer.domElement.style.width = `${width}px`;
+    cssRenderer.domElement.style.height = `${height}px`;
+    cssRenderer.domElement.style.position = 'fixed';
+    cssRenderer.domElement.style.inset = '0';
+    cssRenderer.domElement.style.pointerEvents = 'none';
+}
+
 function createPenguinFlagTexture(textureLoader) {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
@@ -317,8 +354,9 @@ const cssScene = new THREE.Scene();
 // ============================================
 // 第 3 步：创建相机（Camera）
 // ============================================
-const width = window.innerWidth;
-const height = window.innerHeight;
+const initialViewport = syncContainerViewportSize();
+const width = initialViewport.width;
+const height = initialViewport.height;
  
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -339,7 +377,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(width, height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.domElement.style.position = 'absolute';
+renderer.domElement.style.position = 'fixed';
 renderer.domElement.style.top = '0';
 renderer.domElement.style.left = '0';
 renderer.domElement.style.zIndex = '1';
@@ -348,11 +386,12 @@ container.appendChild(renderer.domElement);
 // 4.2 CSS3D 渲染器
 const cssRenderer = new CSS3DRenderer();
 cssRenderer.setSize(width, height);
-cssRenderer.domElement.style.position = 'absolute';
+cssRenderer.domElement.style.position = 'fixed';
 cssRenderer.domElement.style.top = '0';
 cssRenderer.domElement.style.left = '0';
 cssRenderer.domElement.style.zIndex = '2';
 container.appendChild(cssRenderer.domElement);
+syncRendererLayout(initialViewport);
  
 // ============================================
 // 第 4.5 步：添加灯光
@@ -972,6 +1011,7 @@ function createScreen() {
     const screenObject = new CSS3DObject(screenWrap);
     updateResponsiveScreenTransform(screenObject);
     screenObject.element.style.backfaceVisibility = 'hidden';
+    screenObject.element.style.pointerEvents = 'auto';
     
     cssScene.add(screenObject);
     
@@ -1108,12 +1148,10 @@ animate();
 // 第 11 步：响应窗口大小变化
 // ============================================
 window.addEventListener('resize', () => {
-    const newWidth = window.innerWidth;
-    const newHeight = window.innerHeight;
+    const { width: newWidth, height: newHeight } = syncContainerViewportSize();
     camera.aspect = newWidth / newHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(newWidth, newHeight);
-    cssRenderer.setSize(newWidth, newHeight);
+    syncRendererLayout({ width: newWidth, height: newHeight });
 
     applyResponsiveCameraFit();
 
@@ -1123,6 +1161,22 @@ window.addEventListener('resize', () => {
         }
     });
 });
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        const { width: newWidth, height: newHeight } = syncContainerViewportSize();
+        camera.aspect = newWidth / newHeight;
+        camera.updateProjectionMatrix();
+        syncRendererLayout({ width: newWidth, height: newHeight });
+        applyResponsiveCameraFit();
+
+        cssScene.traverse((object) => {
+            if (object instanceof CSS3DObject) {
+                updateResponsiveScreenTransform(object);
+            }
+        });
+    });
+}
  
 console.log('3d-computer initialized');
 console.log('这网页能处，有事它真加载');
