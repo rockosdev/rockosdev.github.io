@@ -47,6 +47,7 @@ let __mobileOverviewSamplePoints = [];
 let __screenObject = null;
 let __desktopInitialViewCaptured = false;
 let __mobileInitialViewCaptured = false;
+let __mobileViewportDebug = {};
 
 const __screenWorldPosition = new THREE.Vector3();
 const __screenWorldQuaternion = new THREE.Quaternion();
@@ -70,6 +71,56 @@ function isMobileLayout() {
 
 function getCurrentViewStateKey() {
     return isMobileLayout() ? 'mobile' : 'desktop';
+}
+
+function collectMobileViewportDebug(label = 'snapshot') {
+    if (!isMobileLayout()) return null;
+
+    const canvasContainer = document.getElementById('canvas-container');
+    const albumLoading = document.getElementById('album-loading');
+    const visualViewport = window.visualViewport;
+
+    const snapshot = {
+        label,
+        timestamp: new Date().toISOString(),
+        isMobileLayout: true,
+        devicePixelRatio: window.devicePixelRatio,
+        windowInner: {
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        visualViewport: visualViewport ? {
+            width: visualViewport.width,
+            height: visualViewport.height,
+            offsetTop: visualViewport.offsetTop,
+            offsetLeft: visualViewport.offsetLeft,
+            scale: visualViewport.scale
+        } : null,
+        page: {
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+            scrollHeight: document.documentElement.scrollHeight,
+            clientHeight: document.documentElement.clientHeight
+        },
+        canvasContainerRect: canvasContainer ? canvasContainer.getBoundingClientRect().toJSON() : null,
+        albumLoadingRect: albumLoading ? albumLoading.getBoundingClientRect().toJSON() : null,
+        mobileCameraComposition: {
+            direction: MOBILE_OVERVIEW_CAMERA_COMPOSITION.direction.toArray(),
+            padding: MOBILE_OVERVIEW_CAMERA_COMPOSITION.padding,
+            focusOffset: MOBILE_OVERVIEW_CAMERA_COMPOSITION.focusOffset.toArray(),
+            targetNdc: MOBILE_OVERVIEW_CAMERA_COMPOSITION.targetNdc.toArray()
+        },
+        camera: {
+            position: camera.position.toArray(),
+            controlsTarget: controls.target.toArray(),
+            zoom: camera.zoom
+        }
+    };
+
+    __mobileViewportDebug = snapshot;
+    window.__mobileViewportDebug = snapshot;
+    console.log('[mobile-viewport-debug]', snapshot);
+    return snapshot;
 }
 
 function updateResponsiveControlsBehavior() {
@@ -443,8 +494,10 @@ function __dismissAlbumOverlay() {
     if (!albumOverlay) return;
 
     albumOverlay.classList.add('is-fading');
+    collectMobileViewportDebug('before-overlay-remove');
     window.setTimeout(() => {
         albumOverlay.remove();
+        collectMobileViewportDebug('after-overlay-remove');
     }, 480);
 }
 
@@ -756,6 +809,7 @@ function createOrbitRingAndPenguin(center, baseRadius) {
                     applyResponsiveCameraFit();
                     __saveInitialViewState('mobile', true);
                     __mobileInitialViewCaptured = true;
+                    collectMobileViewportDebug('penguin-loaded-mobile-refit');
                 }
             }
         },
@@ -1295,6 +1349,7 @@ window.addEventListener('resize', () => {
     // 移动端在 resize 时重新套用总览构图，桌面端不强制改动当前相机位置。
     if (isMobileLayout()) {
         applyResponsiveCameraFit();
+        collectMobileViewportDebug('resize');
     }
 
     cssScene.traverse((object) => {
@@ -1303,6 +1358,15 @@ window.addEventListener('resize', () => {
         }
     });
 });
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        collectMobileViewportDebug('visualViewport-resize');
+    });
+    window.visualViewport.addEventListener('scroll', () => {
+        collectMobileViewportDebug('visualViewport-scroll');
+    });
+}
  
 console.log('3d-computer initialized');
 console.log('这网页能处，有事它真加载');
