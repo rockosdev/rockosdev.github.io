@@ -415,8 +415,11 @@ const SCREEN_ROT_X = -0.37;
 
 // 电脑屏幕默认变换（桌面端基准值）
 const SCREEN_BASE_TRANSFORM = {
-    position: { x: 0.00, y: 52.00, z: -8.00 },
-    scale: { x: 0.125, y: 0.112, z: 0.20 }
+    //position: { x: 0.00, y: 52.00, z: -8.00 },
+    //scale: { x: 0.125, y: 0.112, z: 0.20 }
+    position: { x: 0.12, y: 51.20, z: -7.15 },
+    scale: { x: 0.1218, y: 0.1085, z: 0.20 }
+	
 };
 
 function updateResponsiveScreenTransform(screenObject) {
