@@ -1,6 +1,6 @@
 // ============================================
 // 3D 可旋转电脑
-// 功能：加载相册、在电脑屏幕显示网页、按 V 切换视频、按 U 恢复目标视角、按 R 切换企鹅旗帜与粒子束特效
+// 保留功能：加载相册、屏幕网页、V 播放视频、U 恢复视角、R 切换企鹅特效
 // ============================================
  
 import * as THREE from 'three';
@@ -40,99 +40,7 @@ let penguinFloatingTextSprite = null;
 let penguinFloatingTextHeightOffset = 0;
 let __loadedModel = null;
 let __sceneFocusTarget = new THREE.Vector3();
-let __mobileSceneFocusTarget = new THREE.Vector3();
 let __sceneFitRadius = 0;
-let __mobileSceneFitRadius = 0;
-let __mobileOverviewSamplePoints = [];
-let __screenObject = null;
-let __desktopInitialViewCaptured = false;
-let __mobileInitialViewCaptured = false;
-let __mobileViewportDebug = {};
-
-const __screenWorldPosition = new THREE.Vector3();
-const __screenWorldQuaternion = new THREE.Quaternion();
-const __screenForward = new THREE.Vector3();
-const __screenToCamera = new THREE.Vector3();
-
-const MOBILE_OVERVIEW_CAMERA_COMPOSITION = {
-    direction: new THREE.Vector3(0.03, 0.2, 1),
-    padding: 2.02,
-    focusOffset: new THREE.Vector3(0, -120, 0),
-    targetNdc: new THREE.Vector2(0, 0.16),
-    enableScreenSpaceCompensation: true
-};
-
-function isMobileLayout() {
-    const ua = navigator.userAgent || '';
-    const isMobileUA = /Android|iPhone|iPod|Mobile|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const hasTouch = navigator.maxTouchPoints > 0;
-    return isMobileUA && hasTouch;
-}
-
-function getCurrentViewStateKey() {
-    return isMobileLayout() ? 'mobile' : 'desktop';
-}
-
-function collectMobileViewportDebug(label = 'snapshot') {
-    if (!isMobileLayout()) return null;
-
-    const canvasContainer = document.getElementById('canvas-container');
-    const albumLoading = document.getElementById('album-loading');
-    const visualViewport = window.visualViewport;
-
-    const snapshot = {
-        label,
-        timestamp: new Date().toISOString(),
-        isMobileLayout: true,
-        devicePixelRatio: window.devicePixelRatio,
-        windowInner: {
-            width: window.innerWidth,
-            height: window.innerHeight
-        },
-        visualViewport: visualViewport ? {
-            width: visualViewport.width,
-            height: visualViewport.height,
-            offsetTop: visualViewport.offsetTop,
-            offsetLeft: visualViewport.offsetLeft,
-            scale: visualViewport.scale
-        } : null,
-        page: {
-            scrollX: window.scrollX,
-            scrollY: window.scrollY,
-            scrollHeight: document.documentElement.scrollHeight,
-            clientHeight: document.documentElement.clientHeight
-        },
-        canvasContainerRect: canvasContainer ? canvasContainer.getBoundingClientRect().toJSON() : null,
-        albumLoadingRect: albumLoading ? albumLoading.getBoundingClientRect().toJSON() : null,
-        mobileCameraComposition: {
-            direction: MOBILE_OVERVIEW_CAMERA_COMPOSITION.direction.toArray(),
-            padding: MOBILE_OVERVIEW_CAMERA_COMPOSITION.padding,
-            focusOffset: MOBILE_OVERVIEW_CAMERA_COMPOSITION.focusOffset.toArray(),
-            targetNdc: MOBILE_OVERVIEW_CAMERA_COMPOSITION.targetNdc.toArray()
-        },
-        camera: {
-            position: camera.position.toArray(),
-            controlsTarget: controls.target.toArray(),
-            zoom: camera.zoom
-        }
-    };
-
-    __mobileViewportDebug = snapshot;
-    window.__mobileViewportDebug = snapshot;
-    console.log('[mobile-viewport-debug]', snapshot);
-    return snapshot;
-}
-
-function updateResponsiveControlsBehavior() {
-    if (isMobileLayout()) {
-        controls.enablePan = true;
-        controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
-        return;
-    }
-
-    controls.enablePan = true;
-    controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
-}
 
 function createPenguinFlagTexture(textureLoader) {
     const canvas = document.createElement('canvas');
@@ -284,142 +192,22 @@ function getCameraFitDistance(fitRadius, padding = 1) {
     return (fitRadius / Math.tan(limitingFov / 2)) * padding;
 }
 
-function applyResponsiveCameraFit() {
+function applyCameraFit() {
     if (__sceneFitRadius <= 0) return;
 
-    const targetCenter = isMobileLayout()
-        ? __mobileSceneFocusTarget.clone()
-        : __sceneFocusTarget.clone();
-    const fitRadius = isMobileLayout() && __mobileSceneFitRadius > 0
-        ? __mobileSceneFitRadius
-        : __sceneFitRadius;
-
-    if (isMobileLayout()) {
-        const mobileTargetCenter = targetCenter.clone().add(MOBILE_OVERVIEW_CAMERA_COMPOSITION.focusOffset);
-        const direction = MOBILE_OVERVIEW_CAMERA_COMPOSITION.direction.clone().normalize();
-        const fitDistance = getCameraFitDistance(fitRadius, MOBILE_OVERVIEW_CAMERA_COMPOSITION.padding);
-
-        camera.position.copy(mobileTargetCenter).add(direction.multiplyScalar(fitDistance));
-        controls.target.copy(mobileTargetCenter);
-        camera.updateProjectionMatrix();
-        controls.update();
-        if (MOBILE_OVERVIEW_CAMERA_COMPOSITION.enableScreenSpaceCompensation) {
-            applyMobileScreenSpaceCompensation();
-        }
-        return;
-    }
-
-    moveCameraBackToFitRadius(targetCenter, fitRadius, 1.2);
-}
-
-function rebuildMobileOverviewState(modelBounds, shellRadius, orbitVerticalReach) {
-    const mobileOverviewBounds = new THREE.Box3();
-    const sphereMin = __sceneFocusTarget.clone().addScalar(-shellRadius);
-    const sphereMax = __sceneFocusTarget.clone().addScalar(shellRadius);
-
-    mobileOverviewBounds.expandByPoint(sphereMin);
-    mobileOverviewBounds.expandByPoint(sphereMax);
-    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
-        orbitCenter.x - orbitRadius,
-        orbitCenter.y - orbitVerticalReach,
-        orbitCenter.z - orbitRadius
-    ));
-    mobileOverviewBounds.expandByPoint(new THREE.Vector3(
-        orbitCenter.x + orbitRadius,
-        orbitCenter.y + orbitVerticalReach,
-        orbitCenter.z + orbitRadius
-    ));
-    mobileOverviewBounds.expandByPoint(modelBounds.min);
-    mobileOverviewBounds.expandByPoint(modelBounds.max);
-
-    const mobileSphere = new THREE.Sphere();
-    mobileOverviewBounds.getBoundingSphere(mobileSphere);
-    __mobileSceneFocusTarget.copy(__sceneFocusTarget);
-    __mobileSceneFitRadius = mobileSphere.radius;
-
-    const boundsMin = mobileOverviewBounds.min.clone();
-    const boundsMax = mobileOverviewBounds.max.clone();
-    const boundsCenter = mobileOverviewBounds.getCenter(new THREE.Vector3());
-
-    __mobileOverviewSamplePoints = [
-        boundsCenter.clone(),
-        new THREE.Vector3(boundsMin.x, boundsMin.y, boundsMin.z),
-        new THREE.Vector3(boundsMin.x, boundsMin.y, boundsMax.z),
-        new THREE.Vector3(boundsMin.x, boundsMax.y, boundsMin.z),
-        new THREE.Vector3(boundsMin.x, boundsMax.y, boundsMax.z),
-        new THREE.Vector3(boundsMax.x, boundsMin.y, boundsMin.z),
-        new THREE.Vector3(boundsMax.x, boundsMin.y, boundsMax.z),
-        new THREE.Vector3(boundsMax.x, boundsMax.y, boundsMin.z),
-        new THREE.Vector3(boundsMax.x, boundsMax.y, boundsMax.z),
-        new THREE.Vector3(__sceneFocusTarget.x, __sceneFocusTarget.y + shellRadius, __sceneFocusTarget.z),
-        new THREE.Vector3(__sceneFocusTarget.x, __sceneFocusTarget.y - shellRadius, __sceneFocusTarget.z),
-        modelBounds.getCenter(new THREE.Vector3()),
-        modelBounds.min.clone(),
-        modelBounds.max.clone()
-    ];
-
-    if (orbitPenguin) {
-        __mobileOverviewSamplePoints.push(orbitPenguin.position.clone());
-    }
-}
-
-function applyMobileScreenSpaceCompensation() {
-    if (!isMobileLayout() || __mobileOverviewSamplePoints.length === 0) return;
-
-    const desiredNdc = MOBILE_OVERVIEW_CAMERA_COMPOSITION.targetNdc;
-
-    for (let i = 0; i < 2; i++) {
-        let sumX = 0;
-        let sumY = 0;
-        let count = 0;
-
-        __mobileOverviewSamplePoints.forEach((point) => {
-            const projected = point.clone().project(camera);
-            if (Number.isFinite(projected.x) && Number.isFinite(projected.y) && Number.isFinite(projected.z)) {
-                sumX += projected.x;
-                sumY += projected.y;
-                count += 1;
-            }
-        });
-
-        if (!count) return;
-
-        const currentNdcX = sumX / count;
-        const currentNdcY = sumY / count;
-        const deltaX = desiredNdc.x - currentNdcX;
-        const deltaY = desiredNdc.y - currentNdcY;
-
-        if (Math.abs(deltaX) < 0.01 && Math.abs(deltaY) < 0.01) return;
-
-        const distanceToTarget = camera.position.distanceTo(controls.target);
-        const visibleHeight = 2 * distanceToTarget * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-        const visibleWidth = visibleHeight * camera.aspect;
-
-        const forward = camera.getWorldDirection(new THREE.Vector3()).normalize();
-        const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-        const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-
-        const offset = new THREE.Vector3()
-            .add(right.multiplyScalar(-deltaX * visibleWidth * 0.5))
-            .add(up.multiplyScalar(-deltaY * visibleHeight * 0.5));
-
-        camera.position.add(offset);
-        controls.target.add(offset);
-        camera.updateProjectionMatrix();
-        controls.update();
-    }
+    moveCameraBackToFitRadius(__sceneFocusTarget.clone(), __sceneFitRadius, 1.2);
 }
 
 // 与电脑屏幕保持一致的 X 轴倾角。
 const SCREEN_ROT_X = -0.37;
 
-// 电脑屏幕默认变换（桌面端基准值）
+// 电脑屏幕默认变换
 const SCREEN_BASE_TRANSFORM = {
     position: { x: 0.00, y: 52.00, z: -8.00 },
     scale: { x: 0.125, y: 0.112, z: 0.20 }
 };
 
-function updateResponsiveScreenTransform(screenObject) {
+function updateScreenTransform(screenObject) {
     if (!screenObject) return;
 
     screenObject.rotation.x = SCREEN_ROT_X;
@@ -433,22 +221,6 @@ function updateResponsiveScreenTransform(screenObject) {
         SCREEN_BASE_TRANSFORM.scale.y,
         SCREEN_BASE_TRANSFORM.scale.z
     );
-}
-
-function updateScreenFacingVisibility() {
-    if (!__screenObject) return;
-
-    __screenObject.getWorldPosition(__screenWorldPosition);
-    __screenObject.getWorldQuaternion(__screenWorldQuaternion);
-
-    __screenForward.set(0, 0, 1).applyQuaternion(__screenWorldQuaternion).normalize();
-    __screenToCamera.copy(camera.position).sub(__screenWorldPosition).normalize();
-
-    const facingDot = __screenForward.dot(__screenToCamera);
-    const shouldShowScreen = facingDot > 0.18;
-
-    __screenObject.visible = shouldShowScreen;
-    __screenObject.element.style.pointerEvents = shouldShowScreen ? 'auto' : 'none';
 }
  
 // ============================================
@@ -494,10 +266,8 @@ function __dismissAlbumOverlay() {
     if (!albumOverlay) return;
 
     albumOverlay.classList.add('is-fading');
-    collectMobileViewportDebug('before-overlay-remove');
     window.setTimeout(() => {
         albumOverlay.remove();
-        collectMobileViewportDebug('after-overlay-remove');
     }, 480);
 }
 
@@ -579,7 +349,6 @@ scene.add(bottomLight);
 const controls = new OrbitControls(camera, cssRenderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-updateResponsiveControlsBehavior();
  
 // ============================================
 // 第 6 步：加载 3D 模型
@@ -614,20 +383,13 @@ loader.load(
         });
         
         autoFitCamera(model);
+        // 记录“刚进入电脑时”的视角（用于 U 键恢复）
+        // 必须在 autoFitCamera + controls.target 更新之后保存，避免误记录默认视角。
         scene.add(model);
-
-        if (!__desktopInitialViewCaptured) {
-            __saveInitialViewState('desktop');
-            __desktopInitialViewCaptured = true;
-        }
+        __saveInitialViewStateOnce();
 
         // 创建地心环境、轨道与企鹅。
         createEarthCoreEnvironment(model);
-
-        if (isMobileLayout() && !__mobileInitialViewCaptured) {
-            __saveInitialViewState('mobile');
-            __mobileInitialViewCaptured = true;
-        }
 
         // 创建屏幕网页
         createScreen();
@@ -635,7 +397,8 @@ loader.load(
         // 设置 R 键：切换企鹅旗帜与粒子特效。
         setupRKeyListener();
 
-        // 模型加载完成后隐藏旧版 #loading 节点，并将相册遮罩切换为“点击进入”状态。
+        // 原逻辑：加载完成后隐藏 #loading。
+        // 现在：不直接让用户“瞬间进入”，而是提示“点击进入”后再淡出相册 overlay。
         const legacyLoading = document.getElementById('loading');
         if (legacyLoading) legacyLoading.style.display = 'none';
         __markAlbumReadyToEnter();
@@ -677,7 +440,6 @@ function createEarthCoreEnvironment(model) {
     earthGridRadius = shellRadius;
     orbitTrackWidth = Math.max(baseRadius * 0.22 * 5, baseRadius * 0.5);
     orbitRadius = earthGridRadius + orbitTrackWidth * 1.5;
-    orbitCenter.set(center.x, 0, center.z);
     const shellColor = 0x9fefff;
     const latCount = 12;
     const lonCount = 18;
@@ -756,13 +518,9 @@ function createEarthCoreEnvironment(model) {
 
     const sceneFitRadius = orbitRadius + orbitTrackWidth * 0.5;
     __sceneFocusTarget.copy(center);
-
-    const orbitVerticalReach = Math.max(baseRadius * 0.22 * 1.45 + 8, baseRadius * 0.5);
     __sceneFitRadius = sceneFitRadius;
-    rebuildMobileOverviewState(box, shellRadius, orbitVerticalReach);
 
-    // 桌面端与移动端都先进入“经纬网球 + 轨道 + 电脑”的总览构图。
-    applyResponsiveCameraFit();
+    applyCameraFit();
 
     createOrbitRingAndPenguin(center, baseRadius);
 
@@ -770,6 +528,8 @@ function createEarthCoreEnvironment(model) {
 }
 
 function createOrbitRingAndPenguin(center, baseRadius) {
+    orbitCenter.set(center.x, 0, center.z);
+
     const penguinLoader = new GLTFLoader();
     penguinLoader.load(
         './assets/models/qq.glb',
@@ -798,20 +558,6 @@ function createOrbitRingAndPenguin(center, baseRadius) {
             orbitPenguinBaseY = orbitCenter.y + targetSize * 0.45;
             orbitPenguin.position.set(orbitCenter.x + orbitRadius, orbitPenguinBaseY, orbitCenter.z);
             scene.add(orbitPenguin);
-
-            if (__loadedModel) {
-                const modelBounds = new THREE.Box3().setFromObject(__loadedModel);
-                const shellRadius = earthGridRadius;
-                const orbitVerticalReach = Math.max(targetSize * 1.45 + 8, baseRadius * 0.5);
-                rebuildMobileOverviewState(modelBounds, shellRadius, orbitVerticalReach);
-
-                if (isMobileLayout() && !__albumOverlayDismissed) {
-                    applyResponsiveCameraFit();
-                    __saveInitialViewState('mobile', true);
-                    __mobileInitialViewCaptured = true;
-                    collectMobileViewportDebug('penguin-loaded-mobile-refit');
-                }
-            }
         },
         undefined,
         function (error) {
@@ -1100,15 +846,14 @@ function autoFitCamera(object) {
     
     const maxDim = Math.max(size.x, size.y, size.z);
     const cameraDistance = getCameraFitDistance(maxDim * 0.5, 2.5);
-
+    
     camera.position.set(
         center.x + maxDim * 0.5,
         center.y + maxDim * 0.3,
         center.z + cameraDistance
     );
-
+    
     controls.target.copy(center);
-
     controls.update();
 }
  
@@ -1123,7 +868,7 @@ directionalLight.position.set(10, 10, 10);
 scene.add(directionalLight);
  
 // ============================================
-// 第 7.3 步：添加网格辅助线与坐标轴辅助线
+// 第 7.3 步：添加辅助线（保留！）
 // ============================================
 const gridHelper = new THREE.GridHelper(10000, 100);
 scene.add(gridHelper);
@@ -1197,8 +942,7 @@ function createScreen() {
     screenWrap.appendChild(loadingHint);
 
     const screenObject = new CSS3DObject(screenWrap);
-    __screenObject = screenObject;
-    updateResponsiveScreenTransform(screenObject);
+    updateScreenTransform(screenObject);
     screenObject.element.style.backfaceVisibility = 'hidden';
     
     cssScene.add(screenObject);
@@ -1325,7 +1069,6 @@ function animate() {
 
     controls.update();
     updateEarthCoreEnvironment();
-    updateScreenFacingVisibility();
 
     renderer.render(scene, camera);
     cssRenderer.render(cssScene, camera);
@@ -1344,82 +1087,52 @@ window.addEventListener('resize', () => {
     renderer.setSize(newWidth, newHeight);
     cssRenderer.setSize(newWidth, newHeight);
 
-    updateResponsiveControlsBehavior();
-
-    // 移动端在 resize 时重新套用总览构图，桌面端不强制改动当前相机位置。
-    if (isMobileLayout()) {
-        applyResponsiveCameraFit();
-        collectMobileViewportDebug('resize');
-    }
+    applyCameraFit();
 
     cssScene.traverse((object) => {
         if (object instanceof CSS3DObject) {
-            updateResponsiveScreenTransform(object);
+            updateScreenTransform(object);
         }
     });
 });
-
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-        collectMobileViewportDebug('visualViewport-resize');
-    });
-    window.visualViewport.addEventListener('scroll', () => {
-        collectMobileViewportDebug('visualViewport-scroll');
-    });
-}
  
 console.log('3d-computer initialized');
 console.log('这网页能处，有事它真加载');
 
 // ============================================
-// U 键恢复目标视角
-// 桌面端恢复到电脑前方视角，移动端恢复到移动端总览视角
+// U 键恢复初始视角
+// 还原 camera.position、controls.target 和 camera.zoom
 // ============================================
 
 const __initialViewState = {
-    desktop: {
-        saved: false,
-        cameraPosition: new THREE.Vector3(),
-        controlsTarget: new THREE.Vector3(),
-        cameraZoom: 1
-    },
-    mobile: {
-        saved: false,
-        cameraPosition: new THREE.Vector3(),
-        controlsTarget: new THREE.Vector3(),
-        cameraZoom: 1
-    }
+    saved: false,
+    cameraPosition: new THREE.Vector3(),
+    controlsTarget: new THREE.Vector3(),
+    cameraZoom: 1
 };
 
-function __saveInitialViewState(viewKey = getCurrentViewStateKey(), force = false) {
-    const targetState = __initialViewState[viewKey];
-    if (!targetState || (targetState.saved && !force)) return;
-
-    targetState.cameraPosition.copy(camera.position);
-    targetState.controlsTarget.copy(controls.target);
-    targetState.cameraZoom = camera.zoom;
-    targetState.saved = true;
-    console.log(`✅ 已记录 ${viewKey} 初始视角（按 U 可恢复）`);
+function __saveInitialViewStateOnce() {
+    if (__initialViewState.saved) return;
+    __initialViewState.cameraPosition.copy(camera.position);
+    __initialViewState.controlsTarget.copy(controls.target);
+    __initialViewState.cameraZoom = camera.zoom;
+    __initialViewState.saved = true;
+    console.log('✅ 已记录初始视角（按 U 可恢复）');
 }
 
 function __restoreInitialViewState() {
-    const viewKey = getCurrentViewStateKey();
-    const targetState = __initialViewState[viewKey];
-
-    if (!targetState || !targetState.saved) {
+    if (!__initialViewState.saved) {
         console.warn('⚠️ 初始视角尚未记录，无法恢复');
         return;
     }
-
-    camera.position.copy(targetState.cameraPosition);
-    controls.target.copy(targetState.controlsTarget);
-    camera.zoom = targetState.cameraZoom;
+    camera.position.copy(__initialViewState.cameraPosition);
+    controls.target.copy(__initialViewState.controlsTarget);
+    camera.zoom = __initialViewState.cameraZoom;
     camera.updateProjectionMatrix();
     controls.update();
 }
 
-// 桌面端在自动对焦后先记录“电脑前方视角”，随后再切到总览；
-// 移动端记录的是移动端总览视角。
+// 初始视角在模型完成自动对焦后立即记录，避免保存到默认机位。
 
 // 监听 U 键
 window.addEventListener('keydown', (e) => {

@@ -13,7 +13,6 @@
   place-items: center;
   background: #000;
   color: #fff;
-  overflow: hidden;
 }
 
 /* 用于淡出动画 */
@@ -223,23 +222,4 @@
 
 #album-loading.is-ready #enter-btn {
   display: inline-block;
-}
-
-@media (max-width: 768px) {
-  #album-loading {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    min-height: 100vh;
-    overscroll-behavior: none;
-    touch-action: none;
-  }
-
-  @supports (height: 100dvh) {
-    #album-loading {
-      height: 100dvh;
-      min-height: 100dvh;
-    }
-  }
 }

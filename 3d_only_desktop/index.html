@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Rotatable Computer</title>
     <!-- 引入 Three.js -->
     <script type="importmap">
@@ -15,65 +14,21 @@
     </script>
     <link rel="stylesheet" href="./album-loading.css" />
     <style>
-        html,
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
         
         body {
+            overflow: hidden;
             background: #1a1a1a;
-            position: fixed;
-            inset: 0;
-            overscroll-behavior: none;
-            touch-action: manipulation;
         }
         
         #canvas-container {
             width: 100vw;
             height: 100vh;
-            min-height: 100vh;
             position: relative;
-            overflow: hidden;
-        }
-
-        @supports (height: 100dvh) {
-            #canvas-container {
-                height: 100dvh;
-                min-height: 100dvh;
-            }
-        }
-
-        @media (max-width: 768px) {
-            body {
-                width: 100vw;
-                height: 100vh;
-                min-height: 100vh;
-            }
-
-            #canvas-container {
-                position: fixed;
-                inset: 0;
-                width: 100vw;
-                height: 100vh;
-                min-height: 100vh;
-            }
-
-            @supports (height: 100dvh) {
-                body,
-                #canvas-container {
-                    height: 100dvh;
-                    min-height: 100dvh;
-                }
-            }
         }
         
         /* loading overlay 内的 HUD 样式在 album-loading.css 内 */

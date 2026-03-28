@@ -646,6 +646,383 @@ If the target site blocks iframe embedding, it will not display correctly.
 - Support multiple scene presets
 - Add a GUI panel such as lil-gui
 
+### Advanced understanding: dependency logic among the laptop, earth-grid sphere, penguin orbit, and flag/particle effects
+
+This section explains which part depends on which other part, and which object acts as the base reference.
+
+The short answer is:
+
+```text
+Laptop model -> model bounding box / center / size -> earth-grid sphere and orbit parameters -> penguin size and initial orbit placement -> trailing flag / particle / text effects
+```
+
+So the deepest base reference in this visual system is:
+
+> **the laptop model's bounding box size and center point.**
+
+Everything else is derived layer by layer from that.
+
+---
+
+#### 1) First base layer: the laptop model defines the center and the base size
+
+File: `js/main.js`
+
+Core code:
+
+```js
+function createEarthCoreEnvironment(model) {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    const baseRadius = Math.max(size.x, size.y, size.z) * 1.7;
+```
+
+Three important things happen here:
+
+- `box`: builds a bounding box around the laptop model;
+- `center`: gets the model center;
+- `baseRadius`: takes the maximum dimension and multiplies it by `1.7` to create a base radius for the rest of the environment.
+
+You can think of it like this:
+
+- `center` decides **where the whole visual system is centered**;
+- `baseRadius` decides **how large the whole derived system should be**.
+
+If the laptop model becomes larger, then:
+
+- the earth-grid sphere becomes larger,
+- the orbit becomes larger,
+- the penguin target size becomes larger,
+- and the flag / particle trail scales up as well.
+
+So the laptop model is not only something to look at. It is also the size reference for the whole derived effect system.
+
+---
+
+#### 2) Second base layer: the earth-grid sphere and orbit are built from the laptop model
+
+File: `js/main.js`
+
+Core code:
+
+```js
+    earthCoreGroup = new THREE.Group();
+    earthCoreGroup.position.copy(center);
+    scene.add(earthCoreGroup);
+
+    const shellRadius = baseRadius * 3.1;
+    earthGridRadius = shellRadius;
+    orbitTrackWidth = Math.max(baseRadius * 0.22 * 5, baseRadius * 0.5);
+    orbitRadius = earthGridRadius + orbitTrackWidth * 1.5;
+    orbitCenter.set(center.x, 0, center.z);
+```
+
+The dependency is very explicit here:
+
+- `earthCoreGroup.position.copy(center)` means the earth-grid sphere is centered around the laptop model center;
+- `shellRadius = baseRadius * 3.1` means the shell size comes from the laptop size;
+- `orbitTrackWidth` also comes from `baseRadius`;
+- `orbitRadius` is then derived from the shell radius and track width;
+- `orbitCenter.set(center.x, 0, center.z)` means the orbit inherits the model center in `x/z`, but forces `y` onto the world horizontal plane.
+
+This point is important:
+
+> **The earth-grid sphere shares the laptop-centered reference, while the orbit uses the laptop's horizontal center but is anchored onto the world ground plane.**
+
+So they are related, but not defined in exactly the same way:
+
+- earth-grid sphere: centered more directly around the laptop model;
+- orbit: centered around the laptop area in `x/z`, but flattened onto the world horizontal plane.
+
+That helps keep the orbit stable instead of making it float or tilt with the model's vertical placement.
+
+---
+
+#### 3) Third base layer: penguin size and initial placement depend on orbit parameters
+
+File: `js/main.js`
+
+Core code:
+
+```js
+function createOrbitRingAndPenguin(center, baseRadius) {
+    const penguinLoader = new GLTFLoader();
+    penguinLoader.load(
+        './assets/models/qq.glb',
+        function (gltf) {
+            orbitPenguin = gltf.scene;
+
+            const penguinBox = new THREE.Box3().setFromObject(orbitPenguin);
+            const penguinSize = new THREE.Vector3();
+            penguinBox.getSize(penguinSize);
+            const penguinMaxDim = Math.max(penguinSize.x, penguinSize.y, penguinSize.z) || 1;
+            const targetSize = baseRadius * 0.22;
+            const scale = targetSize / penguinMaxDim;
+            orbitPenguin.scale.setScalar(scale);
+```
+
+This shows that:
+
+- the penguin does not decide its final display size by itself;
+- the code measures its original model size first;
+- then defines `targetSize = baseRadius * 0.22`;
+- which means **the laptop-derived base radius still controls the penguin's final visual scale**.
+
+Now look at the position setup:
+
+```js
+            orbitPenguinBaseY = orbitCenter.y + targetSize * 0.45;
+            orbitPenguin.position.set(orbitCenter.x + orbitRadius, orbitPenguinBaseY, orbitCenter.z);
+            scene.add(orbitPenguin);
+```
+
+This means:
+
+- the penguin's circular placement depends on `orbitCenter` and `orbitRadius`;
+- its height is also linked to `targetSize`;
+- so a larger penguin also gets a slightly higher base floating height.
+
+In one sentence:
+
+> **The penguin uses the orbit as its position reference, and uses the laptop-derived `baseRadius` as its scale reference.**
+
+---
+
+#### 4) Fourth base layer: the orbit visuals depend on `orbitRadius` and `orbitCenter`
+
+File: `js/main.js`
+
+Core code:
+
+```js
+function createOrbitRingVisual() {
+    if (orbitRadius <= 0 || orbitTrackWidth <= 0) return;
+
+    const innerRadius = Math.max(orbitRadius - orbitTrackWidth * 0.5, 10);
+    const outerRadius = orbitRadius + orbitTrackWidth * 0.5;
+
+    const trackGeometry = new THREE.RingGeometry(innerRadius, outerRadius, 180);
+    ...
+    orbitTrackMesh.position.set(orbitCenter.x, orbitCenter.y + 2, orbitCenter.z);
+```
+
+and:
+
+```js
+    const ringCurve = new THREE.EllipseCurve(0, 0, orbitRadius, orbitRadius, 0, Math.PI * 2, false, 0);
+    const ringPoints3D = ringPoints2D.map((point) => new THREE.Vector3(
+        orbitCenter.x + point.x,
+        orbitCenter.y + 5,
+        orbitCenter.z + point.y
+    ));
+```
+
+This shows that the orbit visuals are also derived objects, based on:
+
+- `orbitRadius`: how large the circle is;
+- `orbitTrackWidth`: how thick the ring band is;
+- `orbitCenter`: where the orbit center is.
+
+So the real dependency chain is:
+
+```text
+Laptop model size -> baseRadius -> shellRadius / orbitTrackWidth / orbitRadius -> orbit geometry
+```
+
+---
+
+#### 5) Fifth base layer: the penguin motion itself uses the orbit center and orbit radius
+
+File: `js/main.js`
+
+Core code:
+
+```js
+function updateOrbitPenguin(time) {
+    if (!orbitPenguin || orbitRadius <= 0) return;
+
+    const orbitSpeed = -time * 1.8;
+    const x = orbitCenter.x + Math.cos(orbitSpeed) * orbitRadius;
+    const z = orbitCenter.z + Math.sin(orbitSpeed) * orbitRadius;
+    const dirX = -Math.sin(orbitSpeed);
+    const dirZ = Math.cos(orbitSpeed);
+    const forwardDirection = new THREE.Vector3(dirX, 0, dirZ).normalize();
+    const heading = Math.atan2(dirX, dirZ) + ORBIT_PENGUIN_HEADING_OFFSET;
+
+    orbitPenguin.position.set(
+        x,
+        orbitPenguinBaseY + Math.sin(time * 10) * 8,
+        z
+    );
+    orbitPenguin.rotation.set(0, heading, 0);
+
+    updatePenguinFollowEffects(time, forwardDirection);
+}
+```
+
+The meaning is:
+
+- `x = cx + cos(t) * r`
+- `z = cz + sin(t) * r`
+
+which is the standard **parametric equation of circular motion**.
+
+If the orbit center is `(cx, cz)`, radius is `r`, and the angular parameter is `θ`, then:
+
+```text
+x = cx + r cos(θ)
+z = cz + r sin(θ)
+```
+
+`dirX` and `dirZ` are used to compute the tangent direction, so the penguin can face the direction it is moving.
+
+`heading = atan2(dirX, dirZ)` is essentially:
+
+> converting the current direction vector into a yaw angle.
+
+That is why the penguin does not simply slide sideways. It appears to move along the orbit properly.
+
+---
+
+#### 6) Sixth base layer: the flag, floating text, and particle beam all depend on the penguin target size
+
+File: `js/main.js`
+
+Core code:
+
+```js
+function createPenguinFollowEffects(targetSize) {
+    const flagWidth = targetSize * 2.8;
+    const flagHeight = targetSize * 1.55;
+    ...
+    penguinTrailLength = targetSize * 8.5;
+    penguinFlagPoleOffset = targetSize * 0.9;
+    penguinFlagHeightOffset = targetSize * 0.75;
+    penguinBeamGapOffset = targetSize * 2.7;
+    penguinFloatingTextHeightOffset = targetSize * 2.7;
+```
+
+Important point:
+
+- `targetSize` comes from the previous layer, which is the penguin target size;
+- flag size, trail length, pole offset, text height, and beam start gap are all derived from it.
+
+That means:
+
+> **The flag and particle system are not scaled directly from the laptop. They are scaled indirectly through the chain: laptop -> penguin target size -> effect dimensions.**
+
+This keeps the effect visually proportional to the penguin body size.
+
+---
+
+#### 7) Seventh base layer: at runtime, the flag and particles use the penguin's current position and direction as the direct reference
+
+File: `js/main.js`
+
+Core code:
+
+```js
+function updatePenguinFollowEffects(time, forwardDirection) {
+    if (!orbitPenguin || !penguinFlagMesh || !penguinParticleBeam || !penguinFlagBasePositions) return;
+    if (!penguinFollowEffectEnabled) return;
+
+    const backDirection = forwardDirection.clone().multiplyScalar(-1);
+    const sideDirection = new THREE.Vector3().crossVectors(backDirection, new THREE.Vector3(0, 1, 0)).normalize();
+    const upDirection = new THREE.Vector3().crossVectors(sideDirection, backDirection).normalize();
+    const frontDirection = forwardDirection.clone();
+```
+
+Flag anchor:
+
+```js
+    const flagAnchor = orbitPenguin.position.clone()
+        .add(frontDirection.clone().multiplyScalar(penguinFlagPoleOffset))
+        .add(upDirection.clone().multiplyScalar(penguinFlagHeightOffset));
+```
+
+Particle beam start:
+
+```js
+    const beamStart = orbitPenguin.position.clone()
+        .add(frontDirection.clone().multiplyScalar(penguinFlagPoleOffset + penguinBeamGapOffset + penguinTrailLength * 0.08))
+        .add(upDirection.clone().multiplyScalar(penguinFlagHeightOffset * 0.2));
+```
+
+This is a key point:
+
+- the flag is not fixed at one world-space location;
+- the particles are not emitted directly from the orbit center;
+- both first read `orbitPenguin.position`;
+- then apply local offsets using the penguin's current forward, side, and up directions.
+
+So their true direct reference is:
+
+> **the penguin's current position and orientation at that moment.**
+
+That is why when the penguin turns, the flag and the trail turn with it.
+
+---
+
+#### 8) Putting the full dependency chain together
+
+You can summarize the whole modeling / dependency process like this:
+
+```text
+Laptop model bounding box
+  -> center, size
+  -> baseRadius
+  -> shellRadius / orbitTrackWidth / orbitRadius / orbitCenter
+  -> penguin targetSize, scale, initial orbit position
+  -> flag size, particle trail length, text height offset
+  -> runtime updates using penguin position + orientation
+```
+
+Or, in a more direct “which part depends on which base” form:
+
+```text
+Laptop model = global base reference
+Earth-grid sphere = derived from laptop center and size
+Penguin orbit = derived from laptop-based shell radius and orbit width
+Penguin model = positioned by orbit parameters, scaled by baseRadius
+Flag / particles / text = sized by penguin scale, oriented by penguin runtime motion
+```
+
+---
+
+#### 9) What knowledge helps you understand this part of the code
+
+If you want to fully understand this part later, it helps to know:
+
+1. **Bounding boxes**
+   - `Box3`
+   - `getSize()`
+   - `getCenter()`
+
+2. **Vectors (`Vector3`)**
+   - vector addition/subtraction
+   - normalization with `normalize()`
+   - cross product with `crossVectors()`
+
+3. **Parametric circular motion**
+   - `x = cx + r cos(θ)`
+   - `z = cz + r sin(θ)`
+
+4. **Orientation angles / inverse trigonometry**
+   - `atan2(...)`
+
+5. **Local basis vectors**
+   - forward
+   - side / right
+   - up
+
+Once these ideas are clear, this part of the project stops looking like a random collection of magic numbers, and instead reads more like:
+
+> define a global base, derive layered sizes from it, then attach runtime-following effects to a moving character.
+
 ---
 
 ## 13. One-sentence summary
