@@ -1,7 +1,7 @@
 ---
 title:              "基于Jekyll的静态GitHub博客搭建" 
 date:               2026-02-24 11:20:00              
-last_modified_at:   2026-03-21 04:05:00           
+last_modified_at:   2026-04-07 11:17:35
 toc:                true                           
 categories:         [Blog]                  
 tags:               [jekyll]                           
@@ -305,7 +305,7 @@ assets/
 ---
 title:              "基于Jekyll的静态GitHub博客搭建"    # 文章标题（必需）
 date:               2026-02-24 11:20:00              # 发布时间（必需）
-last_modified_at:   2026-02-25 15:30:00              # 更新时间
+last_modified_at:   2026-04-07 11:17:35
 toc:                true                             # 显示文章目录
 categories:         [Blog, Jekyll]                   # 文章分类（一级目录， 二级目录， 最多支持二级目录，首字母大写）
 tags:               [blog]                           # 文章标签（可多个, 全部小写）
