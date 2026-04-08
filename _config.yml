@@ -139,6 +139,9 @@ assets:
 
 pwa:
   enabled: true # The option for PWA feature (installable)
+  # add myslef
+  manifest: /manifest.json
+  theme_color: "#1b1b1e"
   cache:
     enabled: true # The option for PWA offline cache
     # Paths defined here will be excluded from the PWA cache.
