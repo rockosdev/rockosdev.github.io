@@ -31,7 +31,7 @@ The project currently provides the following features:
 ### 2) Main 3D scene
 
 - Loads a laptop 3D model: `assets/models/laptop.glb`
-- Automatically places the camera at a good viewing position
+- Automatically places the camera so the overall composition is visible first, including the laptop, earth-grid shell, and penguin orbit
 - Supports mouse drag viewing through `OrbitControls`
 
 ### 3) Content on the laptop screen
@@ -67,8 +67,13 @@ The project currently provides the following features:
 ├── README.md                 # Chinese documentation
 ├── README_EN.md              # English documentation
 ├── js/
-│   ├── main.js               # Main logic file
-│   └── main.js.bak           # Backup file
+│   ├── main.js               # Main entry, scene assembly, and lifecycle flow
+│   └── modules/
+│       ├── albumOverlay.js   # Loading overlay and enter flow
+│       ├── earthOrbitSystem.js # Earth-grid shell, penguin orbit, flag, and particle effects
+│       ├── modelLoader.js    # Laptop model loading and material normalization
+│       ├── screenExperience.js # Screen content, video toggle, and debug hotkeys
+│       └── viewport.js       # Mobile viewport detection and responsive helpers
 └── assets/
     ├── album/
     │   └── img/              # Images used by the loading album
@@ -104,21 +109,71 @@ You can think of it as:
 
 ## `js/main.js`
 
-This is the core file of the entire project. Almost all major logic is implemented here.
+This is now the main entry file of the project. Its job is primarily to wire modules together.
 
 It includes:
 
 - Creating the Three.js scene, camera, and renderers
-- Loading the laptop and penguin models
+- Calling the model loading module
 - Creating lights
 - Creating the CSS3D web screen
 - Managing the loading overlay state
-- Building the earth-grid-like environment
-- Handling particles, flags, glowing text, and animation effects
+- Calling the earth-grid, penguin orbit, and effect modules
 - Listening for keyboard events
 - Running the animation loop
 
-If you want to modify the project later, this is the file you will most likely edit first.
+You can think of it as:
+
+> The main controller file. It keeps the runtime flow, while concrete features are delegated to files inside `js/modules/`.
+
+If you want to modify the project later, this is still a good place to start reading, but many concrete features now live in dedicated modules.
+
+---
+
+## `js/modules/`
+
+This directory contains the modularized feature files.
+
+### `albumOverlay.js`
+
+Responsible for the loading overlay flow:
+
+- Updating progress text
+- Showing the Enter button
+- Fading out and removing the overlay
+
+### `viewport.js`
+
+Responsible for responsive and mobile viewport logic:
+
+- Detecting mobile layout
+- Collecting mobile viewport debug snapshots
+- Adjusting `OrbitControls` behavior
+
+### `screenExperience.js`
+
+Responsible for the laptop screen behavior:
+
+- Creating the embedded web page and video container
+- Handling the `V` key video toggle
+- Handling screen debug hotkeys
+
+### `modelLoader.js`
+
+Responsible for laptop model loading:
+
+- Loading `laptop.glb`
+- Normalizing model materials
+
+### `earthOrbitSystem.js`
+
+Responsible for the most visible environmental effects in the scene:
+
+- Earth-grid shell
+- Penguin orbit
+- Penguin animation
+- Flag, particle beam, and floating text effects
+- `R` key effect toggling
 
 ---
 
@@ -143,17 +198,6 @@ That means:
 
 - It is not the main stylesheet right now
 - You can use it later for shared/global styles
-
----
-
-## `ALBUM_LOADING.md`
-
-This is a supplemental document focused on the album loading feature. It explains:
-
-- The goal of the loading overlay
-- Which files are involved
-- How to replace album images
-- How to run the project locally
 
 ---
 
@@ -217,6 +261,7 @@ During loading, the page shows percentage progress and file sizes.
 
 After the model is loaded successfully:
 
+- The camera first switches to the overall view of the laptop, earth-grid shell, and penguin orbit
 - The laptop screen is created
 - Environment effects are initialized
 - The **Enter** button is shown
