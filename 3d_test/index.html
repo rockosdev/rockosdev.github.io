@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rotatable Computer</title>
+    <!-- 引入 Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <link rel="stylesheet" href="./album-loading.css" />
+    <style>
+        html,
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            background: #1a1a1a;
+            position: fixed;
+            inset: 0;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @supports (height: 100dvh) {
+            #canvas-container {
+                height: 100dvh;
+                min-height: 100dvh;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                width: 100vw;
+                height: 100vh;
+                min-height: 100vh;
+            }
+
+            #canvas-container {
+                position: fixed;
+                inset: 0;
+                width: 100vw;
+                height: 100vh;
+                min-height: 100vh;
+            }
+
+            @supports (height: 100dvh) {
+                body,
+                #canvas-container {
+                    height: 100dvh;
+                    min-height: 100dvh;
+                }
+            }
+        }
+        
+        /* loading overlay 内的 HUD 样式在 album-loading.css 内 */
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <!-- 加载期间：播放 3D 相册；加载完成后提示“点击进入” -->
+        <div id="album-loading" aria-label="loading overlay">
+            <div>
+                <div class="album-box" aria-label="3d photo album">
+                    <ul class="album-minbox">
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                    </ul>
+                    <ol class="album-maxbox">
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                        <li></li>
+                    </ol>
+                </div>
+
+                <div class="album-hud">
+                    <div id="loading-text">加载模型中...</div>
+                    <div id="progress">0%</div>
+                    <button id="enter-btn" type="button">点击进入</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 兼容：保留原 id=loading（main.js 会用它判断“是否加载完”） -->
+        <div id="loading" style="display:none"></div>
+    </div>
+    
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
