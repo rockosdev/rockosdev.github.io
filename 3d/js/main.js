@@ -13,6 +13,7 @@ import {
     collectMobileViewportDebug,
     getCurrentViewStateKey,
     isMobileLayout,
+    syncViewportCssVariables,
     updateResponsiveControlsBehavior
 } from './modules/viewport.js';
 import { createAlbumOverlayController } from './modules/albumOverlay.js';
@@ -21,6 +22,7 @@ import {
     setupScreenDebugHotkeys,
     setupVideoToggleHotkey
 } from './modules/screenExperience.js';
+import { createTextCylinderSystem } from './modules/textCylinder.js';
  
 // ============================================
 // 场景级状态
@@ -244,6 +246,19 @@ function collectMobileViewportDebugWithContext(label = 'snapshot') {
         }
     });
 }
+
+function applyViewportSizing() {
+    const viewportMetrics = syncViewportCssVariables();
+    const width = Math.max(1, viewportMetrics.width);
+    const height = Math.max(1, viewportMetrics.height);
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+    cssRenderer.setSize(width, height);
+
+    return viewportMetrics;
+}
  
 // ============================================
 // 第 1 步：获取容器
@@ -275,8 +290,9 @@ const cssScene = new THREE.Scene();
 // ============================================
 // 第 3 步：创建相机（Camera）
 // ============================================
-const width = window.innerWidth;
-const height = window.innerHeight;
+const initialViewportMetrics = syncViewportCssVariables();
+const width = initialViewportMetrics.width;
+const height = initialViewportMetrics.height;
  
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -353,6 +369,12 @@ const earthOrbitSystem = createEarthOrbitSystem({
     },
     getLoadedModel: () => __loadedModel
 });
+
+const textCylinderSystem = createTextCylinderSystem({
+    scene,
+    getOrbitInfo: () => earthOrbitSystem.getOrbitInfo(),
+    getPenguinPosition: () => earthOrbitSystem.getPenguinPosition()
+});
  
 // ============================================
 // 第 6 步：加载 3D 模型
@@ -386,6 +408,7 @@ loadLaptopModel({
 
         createScreen();
         earthOrbitSystem.setupToggleHotkey();
+        textCylinderSystem.build();
 
         const legacyLoading = document.getElementById('loading');
         if (legacyLoading) legacyLoading.style.display = 'none';
@@ -476,6 +499,7 @@ function animate() {
 
     controls.update();
     earthOrbitSystem.update();
+    textCylinderSystem.update();
     updateScreenFacingVisibility();
 
     renderer.render(scene, camera);
@@ -488,12 +512,7 @@ animate();
 // 第 11 步：响应窗口大小变化
 // ============================================
 window.addEventListener('resize', () => {
-    const newWidth = window.innerWidth;
-    const newHeight = window.innerHeight;
-    camera.aspect = newWidth / newHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(newWidth, newHeight);
-    cssRenderer.setSize(newWidth, newHeight);
+    applyViewportSizing();
 
     updateResponsiveControlsBehavior(controls);
 
@@ -512,9 +531,14 @@ window.addEventListener('resize', () => {
 
 if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
+        applyViewportSizing();
+        if (isMobileLayout()) {
+            applyResponsiveCameraFit();
+        }
         collectMobileViewportDebugWithContext('visualViewport-resize');
     });
     window.visualViewport.addEventListener('scroll', () => {
+        syncViewportCssVariables();
         collectMobileViewportDebugWithContext('visualViewport-scroll');
     });
 }
@@ -576,5 +600,13 @@ function __restoreInitialViewState() {
 window.addEventListener('keydown', (e) => {
     if (e.key === 'u' || e.key === 'U') {
         __restoreInitialViewState();
+    }
+});
+
+// 监听 N 键 — 切换文字圆柱显隐
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'n' || e.key === 'N') {
+        const nowVisible = textCylinderSystem.toggle();
+        console.log(nowVisible ? '📜 已显示文字圆柱' : '📜 已隐藏文字圆柱');
     }
 });

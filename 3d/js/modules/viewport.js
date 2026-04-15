@@ -19,6 +19,38 @@ export function getCurrentViewStateKey() {
     return isMobileLayout() ? 'mobile' : 'desktop';
 }
 
+export function getEffectiveViewportMetrics() {
+    const visualViewport = window.visualViewport;
+
+    if (isMobileLayout() && visualViewport) {
+        return {
+            width: Math.round(visualViewport.width),
+            height: Math.round(visualViewport.height),
+            offsetTop: visualViewport.offsetTop,
+            offsetLeft: visualViewport.offsetLeft
+        };
+    }
+
+    return {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        offsetTop: 0,
+        offsetLeft: 0
+    };
+}
+
+export function syncViewportCssVariables() {
+    const metrics = getEffectiveViewportMetrics();
+    const rootStyle = document.documentElement.style;
+
+    rootStyle.setProperty('--app-viewport-width', `${metrics.width}px`);
+    rootStyle.setProperty('--app-viewport-height', `${metrics.height}px`);
+    rootStyle.setProperty('--app-viewport-offset-top', `${metrics.offsetTop}px`);
+    rootStyle.setProperty('--app-viewport-offset-left', `${metrics.offsetLeft}px`);
+
+    return metrics;
+}
+
 export function collectMobileViewportDebug({ camera, controls, label = 'snapshot', onSnapshot }) {
     if (!isMobileLayout()) return null;
 

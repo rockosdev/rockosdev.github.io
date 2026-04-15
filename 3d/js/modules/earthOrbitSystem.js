@@ -594,6 +594,8 @@ export function createEarthOrbitSystem({
     return {
         createEnvironment,
         setupToggleHotkey,
-        update
+        update,
+        getOrbitInfo: () => ({ orbitCenter: orbitCenter.clone(), orbitRadius }),
+        getPenguinPosition: () => orbitPenguin ? orbitPenguin.position.clone() : null
     };
 }

@@ -28,51 +28,47 @@
             height: 100%;
             overflow: hidden;
         }
+
+        :root {
+            --app-viewport-width: 100vw;
+            --app-viewport-height: 100vh;
+            --app-viewport-offset-top: 0px;
+            --app-viewport-offset-left: 0px;
+        }
         
         body {
             background: #1a1a1a;
             position: fixed;
-            inset: 0;
+            top: var(--app-viewport-offset-top);
+            left: var(--app-viewport-offset-left);
+            width: var(--app-viewport-width);
+            height: var(--app-viewport-height);
             overscroll-behavior: none;
             touch-action: manipulation;
         }
         
         #canvas-container {
-            width: 100vw;
-            height: 100vh;
-            min-height: 100vh;
+            width: var(--app-viewport-width);
+            height: var(--app-viewport-height);
+            min-height: var(--app-viewport-height);
             position: relative;
             overflow: hidden;
         }
 
-        @supports (height: 100dvh) {
-            #canvas-container {
-                height: 100dvh;
-                min-height: 100dvh;
-            }
-        }
-
         @media (max-width: 768px) {
             body {
-                width: 100vw;
-                height: 100vh;
-                min-height: 100vh;
+                width: var(--app-viewport-width);
+                height: var(--app-viewport-height);
+                min-height: var(--app-viewport-height);
             }
 
             #canvas-container {
                 position: fixed;
-                inset: 0;
-                width: 100vw;
-                height: 100vh;
-                min-height: 100vh;
-            }
-
-            @supports (height: 100dvh) {
-                body,
-                #canvas-container {
-                    height: 100dvh;
-                    min-height: 100dvh;
-                }
+                top: var(--app-viewport-offset-top);
+                left: var(--app-viewport-offset-left);
+                width: var(--app-viewport-width);
+                height: var(--app-viewport-height);
+                min-height: var(--app-viewport-height);
             }
         }
         
