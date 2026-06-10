@@ -64,7 +64,7 @@ tags:               [cpp, introduction getting-started, compiling-your-first-pro
 
 若您已打开先前项目，可通过文件菜单 > 新建 > 项目访问此对话框。
 
-选择 Windows 桌面向导并单击下一步。若未显示此选项，则可能是安装 Visual Studio 时未选择安装 C++ 桌面开发工作负载。此时请返回[第0.6课——安装集成开发环境（IDE）]({% link _posts/cpp/2026-03-23-installing-an-integrated-development-environment-ide0006.md %})，按说明重新安装Visual Studio（注：无需完全重装，可运行Visual Studio安装程序修改现有安装配置以添加C++工作负载）。
+选择 Windows 桌面向导并单击下一步。若未显示此选项，则可能是安装 Visual Studio 时未选择安装 C++ 桌面开发工作负载。此时请返回[第0.6课——安装集成开发环境（IDE）]({% link _posts/cpp/2026-03-23-installing-an-integrated-development-environment-ide-0006.md %})，按说明重新安装Visual Studio（注：无需完全重装，可运行Visual Studio安装程序修改现有安装配置以添加C++工作负载）。
 
 接下来您将看到如下对话框：
 
