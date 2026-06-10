@@ -100,7 +100,7 @@ tags:               [cpp, introduction getting-started, compiling-your-first-pro
 
 ![image](/assets/img/posts/cpp/introduction/0007-6.png)
 
-首先，请确保左侧列出了Visual C++。若未显示Visual C++，则可能是安装Visual Studio时未选择安装“桌面开发与C++工作负载”。此时请返回[第0.6课——安装集成开发环境（IDE）]({% link _posts/cpp/2026-03-23-installing-an-integrated-development-environment-ide0006.md %})，并按说明重新安装Visual Studio（注：无需完全重装，可运行Visual Studio安装程序修改现有安装以添加C++工作负载）。
+首先，请确保左侧列出了Visual C++。若未显示Visual C++，则可能是安装Visual Studio时未选择安装“桌面开发与C++工作负载”。此时请返回[第0.6课——安装集成开发环境（IDE）]({% link _posts/cpp/2026-03-23-installing-an-integrated-development-environment-ide-0006.md %})，并按说明重新安装Visual Studio（注：无需完全重装，可运行Visual Studio安装程序修改现有安装以添加C++工作负载）。
 
 若使用 Visual Studio 2017 v15.3 或更新版本，请在 Visual C++ 下选择 Windows Desktop，然后在主窗口中选择 Windows Desktop Wizard。
 
