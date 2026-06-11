@@ -4,7 +4,7 @@ date:               2026-04-14 19:02:25
 last_modified_at:   2026-04-14 19:02:25
 toc:                true
 categories:         [C++, Introduction/Getting Started]
-tags:               [cpp, introduction getting-started, configuring-your-compiler-build-configurations]
+tags:               [cpp, introduction getting-started, configuring-your-compiler]
 ---
 
 **构建配置**`build configuration `（也称为**构建目标**`build target`）是一组项目设置，用于确定IDE如何构建您的项目。构建配置通常包含以下内容：可执行文件命名规则、IDE搜索其他代码和库文件的目录路径、是否保留或移除调试信息、编译器对程序的优化程度等。除非有特殊需求，通常建议保留这些设置的默认值。

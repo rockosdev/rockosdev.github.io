@@ -4,7 +4,7 @@ date:               2026-05-17 08:57:18
 last_modified_at:   2026-05-17 08:57:18
 toc:                true
 categories:         [C++, Introduction/Getting Started]
-tags:               [cpp, configuring-your-compiler-compiler-extensions]
+tags:               [cpp, configuring-your-compiler]
 ---
 
 C++标准定义了程序在特定情况下的行为规则。在大多数情况下，编译器会遵循这些规则。然而，许多编译器会对语言进行自己的修改，通常是为了增强与其他语言版本（如C99）的兼容性，或出于历史原因。这些编译器特有的行为被称为编译器扩展。

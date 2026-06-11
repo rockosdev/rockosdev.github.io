@@ -4,7 +4,7 @@ date:               2026-05-17 09:17:18
 last_modified_at:   2026-05-17 09:17:18
 toc:                true
 categories:         [C++, Introduction/Getting Started]
-tags:               [cpp, configuring-your-compiler-warning-and-error-levels] 
+tags:               [cpp, configuring-your-compiler]
 ---
 
 编写程序时，编译器会检查您是否遵循了C++语言规则（前提是您已关闭编译器扩展功能，详见第0.10课——配置编译器：编译器扩展）。若您的操作明确违反语言规则，则程序将被判定为**格式错误**`ill-formed`。

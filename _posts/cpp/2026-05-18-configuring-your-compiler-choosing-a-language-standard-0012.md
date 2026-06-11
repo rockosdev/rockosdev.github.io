@@ -1,10 +1,10 @@
 ---
 title:              "《Learn C++》笔记 0.12 配置编译器：选择语言标准" 
-date:               2026-05-17 09:36:23
-last_modified_at:   2026-05-17 09:36:23
+date:               2026-05-18 09:36:23
+last_modified_at:   2026-05-18 09:36:23
 toc:                true
 categories:         [C++, Introduction/Getting Started]
-tags:               [cpp, configuring-your-compiler-choosing-a-language-standard]
+tags:               [cpp, configuring-your-compiler]
 ---
 
 面对众多版本的C++（C++98、C++03、C++11、C++14、C++17、C++20、C++23等），编译器如何确定使用哪个版本？通常编译器会选择一个默认标准。值得注意的是，默认标准通常并非最新版本——多数编译器默认采用C++14标准，而该版本遗漏了诸多前沿特性。
