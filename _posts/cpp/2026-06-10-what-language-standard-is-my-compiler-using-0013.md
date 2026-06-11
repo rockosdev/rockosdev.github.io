@@ -1,5 +1,5 @@
 ---
-title:              "《Learn C++》笔记 0.0what-language-standard-is-my-compiler-using-0013"
+title:              "《Learn C++》笔记 0.13 我的编译器使用的是哪种语言标准？"
 date:               2026-06-10 20:08:52
 last_modified_at:   2026-06-10 20:08:52
 toc:                true
