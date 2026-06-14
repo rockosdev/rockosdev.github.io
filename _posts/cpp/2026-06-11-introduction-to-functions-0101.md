@@ -154,7 +154,7 @@ int main()
 prog.cc:5:31: error: expected ';' after expression
 ```
 
-![image](asserts/img/posts/cpp/c++-basics/0101-1.png)
+![image](assets/img/posts/cpp/c++-basics/0101-1.png)
 
 
 Clang 提示我们在第 5 行第 31 个字符处，语法规则要求使用分号，但我们未提供分号。因此编译因错误而中断。
