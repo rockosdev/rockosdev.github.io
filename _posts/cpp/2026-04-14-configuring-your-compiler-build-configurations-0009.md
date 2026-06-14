@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.9  配置编译器：构建配置"
 date:               2026-04-14 19:02:25
 last_modified_at:   2026-04-14 19:02:25
 toc:                true
-categories:         [C++, Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, introduction getting-started, configuring-your-compiler]
 ---
 

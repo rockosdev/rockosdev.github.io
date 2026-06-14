@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.13 我的编译器使用的是哪�
 date:               2026-06-10 20:08:52
 last_modified_at:   2026-06-10 20:08:52
 toc:                true
-categories:         [C++,  Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, what-language-standard-is-my-compiler-using]
 ---
 

@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.11 配配置编译器：警告和�
 date:               2026-05-17 09:17:18
 last_modified_at:   2026-05-17 09:17:18
 toc:                true
-categories:         [C++, Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, configuring-your-compiler]
 ---
 

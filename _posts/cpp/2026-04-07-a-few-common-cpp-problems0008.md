@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.8 一些常见的C++问题"
 date:               2026-04-07 08:40:49
 last_modified_at:   2026-04-07 08:40:49
 toc:                true
-categories:         [C++, Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, introduction getting-started, a-few-common-cpp-problems]
 
 ---

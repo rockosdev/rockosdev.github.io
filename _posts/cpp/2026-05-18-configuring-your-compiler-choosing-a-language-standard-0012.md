@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.12 配置编译器：选择语言�
 date:               2026-05-18 09:36:23
 last_modified_at:   2026-05-18 09:36:23
 toc:                true
-categories:         [C++, Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, configuring-your-compiler]
 ---
 
