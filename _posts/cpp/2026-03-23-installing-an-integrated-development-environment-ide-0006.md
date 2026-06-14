@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.6 安装集成开发环境(IDE)"
 date:               2026-03-23 06:38:00
 last_modified_at:   2026-03-23 07:39:00
 toc:                true
-categories:         [C++, Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, introduction getting-started, ide]
 ---
 

@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.5 编译器、链接器和库介绍
 date:               2026-03-21 03:38:00
 last_modified_at:   2026-03-21 03:39:00
 toc:                true
-categories:         [C++, Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, introduction getting-started, compiler-linker-and-libraries]
 ---
 

@@ -3,7 +3,7 @@ title:              "《Learn C++》笔记 0.4 C++开发介绍"
 date:               2026-03-20 03:38:00
 last_modified_at:   2026-03-20 03:39:00
 toc:                true
-categories:         [C++, Introduction/Getting Started]
+categories:         [C++, 00 Introduction/Getting Started]
 tags:               [cpp, introduction getting-started, cpp-development]
 ---
 
