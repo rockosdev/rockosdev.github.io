@@ -1,10 +1,10 @@
 ---
-title:              "《Learn C++》笔记 0.0introduction-to-functions-0021"
+title:              "《Learn C++》笔记 1.1 语句与程序结构"
 date:               2026-06-11 20:43:23
-last_modified_at:   2026-06-11 20:43:23
+last_modified_at:   2026-06-14 23:06:50
 toc:                true
 categories:         [C++, C++ Basics]
-tags:               [cpp, c++-basics]
+tags:               [cpp, statement-structure]
 ---
 
 # 章节导言
