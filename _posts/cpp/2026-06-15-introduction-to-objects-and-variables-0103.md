@@ -1,5 +1,5 @@
 ---
-title:              "《Learn C++》笔记 0.0introduction-to-objects-and-variables-0013"
+title:              "《Learn C++》笔记 1.3 对象与变量介绍"
 date:               2026-06-15 21:41:12
 last_modified_at:   2026-06-15 21:41:12
 toc:                true
