@@ -4,7 +4,7 @@ date:               2026-06-15 21:41:12
 last_modified_at:   2026-06-15 21:41:12
 toc:                true
 categories:         [C++, 01 C++ Basics]
-tags:               [cpp]
+tags:               [cpp, object and variables]
 ---
 
 # 数据与值
