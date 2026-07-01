@@ -4,7 +4,7 @@ date:               2026-07-01 21:28:42
 last_modified_at:   2026-07-01 21:28:42
 toc:                true
 categories:         [C++, 01 C++ Basics]
-tags:               [cpp, instroduction_to_iostream]
+tags:               [cpp, instroduction-to-iostream]
 ---
 
 在本节课中，我们将深入探讨std::cout——这个在“Hello world!”程序中用于向控制台输出文本“Hello world!”的库函数。同时，我们还将学习如何获取用户输入，从而使程序具备更强的交互性。
