@@ -4,7 +4,7 @@ date:               2026-07-11 22:11:57
 last_modified_at:   2026-07-11 22:11:57
 toc:                true
 categories:         [C++, 01 C++ Basics]
-tags:               [cpp, undefined-behavior]
+tags:               [cpp, uninitialized-variables-and-undefined-behavior]
 ---
 
 # 未初始化的变量
