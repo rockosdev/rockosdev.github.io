@@ -1,5 +1,5 @@
 ---
-title:              "《Learn C++》笔记 0.0 iostream 介绍：cout、cin 和 endl"
+title:              "《Learn C++》笔记 1.5 iostream 介绍：cout、cin 和 endl"
 date:               2026-07-01 21:28:42
 last_modified_at:   2026-07-01 21:28:42
 toc:                true
